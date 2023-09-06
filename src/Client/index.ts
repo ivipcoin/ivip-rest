@@ -109,11 +109,12 @@ export default class Client {
 						headers,
 					});
 				})
-				.catch(() =>
+				.catch((e) =>
 					reject({
 						status: 404,
 						data: {},
 						headers: undefined,
+						error: e,
 					}),
 				);
 		});

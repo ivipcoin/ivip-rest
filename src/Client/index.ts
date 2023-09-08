@@ -1,9 +1,11 @@
 import { initializeApp, DEFAULT_ENTRY_NAME, IvipRestAppImpl } from "../App";
 import type { IvipRestAppConfig } from "../types/app";
 import axios, { AxiosHeaders, RawAxiosRequestHeaders } from "axios";
-import { isString, isArray, isNumber, isBoolean } from "ivip-utils";
+import { isString, isArray, isNumber, isBoolean, getAllUrlParams, objectToUrlParams } from "ivip-utils";
 import { ClientFetchConfig } from "../types/client";
 import { Fetch, FetchResponse } from "../types/api";
+
+type urlParams = string | { [key: string]: any };
 
 export class IvipRestClientSettings implements IvipRestAppConfig {
 	readonly name: string = DEFAULT_ENTRY_NAME;
@@ -13,6 +15,7 @@ export class IvipRestClientSettings implements IvipRestAppConfig {
 	readonly host: string = "localhost";
 	readonly port: number | undefined;
 	readonly path: string = "";
+	readonly params: urlParams = {};
 
 	readonly headers: RawAxiosRequestHeaders = {};
 
@@ -46,20 +49,34 @@ export class IvipRestClientSettings implements IvipRestAppConfig {
 		}
 	}
 
-	get apiUrl(): string {
-		const { protocol, host, port, path } = this;
+	apiUrl(urlParams: urlParams = {}): string {
+		const { protocol, host, port, path, params } = this;
 		let url = `${protocol}://${host}`;
+
 		if (port) {
 			url += `:${port}`;
 		}
+
 		if (typeof path === "string" && path.trim() !== "") {
-			url += `/${path}`;
+			url += `/${path.split("?")[0]}`;
 		}
+
+		const joinParams = [path, params, urlParams]
+			.map((p) => {
+				return objectToUrlParams(typeof p === "string" ? getAllUrlParams(p) : typeof p === "object" ? p : {});
+			})
+			.filter((p) => p.trim() !== "")
+			.join("&");
+
+		if (joinParams.trim() !== "") {
+			url += `?${joinParams}`;
+		}
+
 		return url;
 	}
 
 	get isLocalhost(): boolean {
-		return Boolean(this.host === "localhost" || this.host === "[::1]" || this.apiUrl.match(/^127(?:\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$/));
+		return Boolean(this.host === "localhost" || this.host === "[::1]" || this.apiUrl().match(/^127(?:\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$/));
 	}
 
 	get axiosHeaders(): AxiosHeaders {
@@ -77,7 +94,7 @@ export default class Client {
 	readonly app: IvipRestAppImpl<Client, IvipRestClientSettings>;
 	private _config: IvipRestClientSettings;
 
-	constructor(private config: Partial<IvipRestClientSettings>) {
+	constructor(config: Partial<Omit<IvipRestClientSettings, "apiUrl" | "isLocalhost" | "axiosHeaders" | "type">>) {
 		this._config = new IvipRestClientSettings(config);
 		this.app = initializeApp<Client, IvipRestClientSettings>(this, this._config);
 	}
@@ -85,7 +102,7 @@ export default class Client {
 	fetch(route: string, config: Partial<ClientFetchConfig> = {}): Promise<FetchResponse> {
 		const { method = "POST", headers = {}, body = {} } = config;
 
-		const url = this._config.apiUrl.replace(/$\//gi, "") + "/" + route.replace(/^\//gi, "");
+		const url = this._config.apiUrl(route).replace(/$\//gi, "") + "/" + route.replace(/^\//gi, "");
 
 		return new Promise((resolve, reject) => {
 			axios({

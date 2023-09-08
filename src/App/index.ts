@@ -22,12 +22,12 @@ export class IvipRestSettings implements IvipRestAppConfig {
 	}
 }
 
-export class IvipRestAppImpl<App = any, Settings = IvipRestAppConfig> implements IvipRestApp {
+export class IvipRestAppImpl<App = any, Settings = IvipRestAppConfig> implements IvipRestApp<App> {
 	private readonly _config: Settings;
 	private readonly _options: IvipRestSettings;
 	private _isDeleted = false;
 
-	constructor(app: App, config: Settings, options: IvipRestSettings) {
+	constructor(readonly app: App, config: Settings, options: IvipRestSettings) {
 		this._config = config;
 		this._options = options;
 	}
@@ -98,7 +98,7 @@ export function appExists(name?: string): boolean {
 }
 
 export function getApp(name: string = DEFAULT_ENTRY_NAME): IvipRestApp {
-	const app = _apps.get(name);
+	const { app } = _apps.get(name) ?? {};
 	if (!app) {
 		//throw ERROR_FACTORY.create(AppError.NO_APP, { appName: name });
 		throw "";
@@ -111,7 +111,7 @@ export function getApps(): IvipRestApp[] {
 }
 
 export function getFirstApp(): IvipRestApp {
-	const app = getApps()[0];
+	const { app } = getApps()[0];
 	if (!app) {
 		//throw ERROR_FACTORY.create(AppError.NO_APP, { appName: name });
 		throw "";

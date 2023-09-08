@@ -3,9 +3,10 @@ export interface IvipRestAppConfig {
 	readonly type: "server" | "client";
 }
 
-export interface IvipRestApp {
+export interface IvipRestApp<App = any> {
 	readonly name: string;
 	readonly options: IvipRestAppConfig;
 	readonly config: any;
 	readonly isDeleted: boolean;
+	readonly app: App;
 }

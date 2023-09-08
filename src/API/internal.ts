@@ -13,6 +13,8 @@ export const cache = new Map<
 	}
 >();
 
+const API_RESPONSE_EXPIRES = 15;
+
 const calculateExpiryTime = (expirySeconds: number) => (expirySeconds > 0 ? Date.now() + expirySeconds * 1000 : Infinity);
 
 const cleanUp = () => {
@@ -48,13 +50,12 @@ export const getCacheBy = (args: any[]): Fetch | undefined => {
 	return promise;
 };
 
-export const pushCacheBy = (args: any[], promise: Fetch): Fetch => {
-	const now = Date.now();
-	let key: string = now.toString();
+export const pushCacheBy = (args: any[], promise: Fetch, expirySeconds: number = API_RESPONSE_EXPIRES): Fetch => {
+	let key: string = Date.now().toString();
 
 	cache.set(key, {
 		props: args,
-		expires: calculateExpiryTime(now),
+		expires: calculateExpiryTime(expirySeconds),
 		promise,
 	});
 

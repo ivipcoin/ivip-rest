@@ -65,13 +65,13 @@
 	"homepage": "https://github.com/ivipcoin/ivip-rest#readme",
 	"dependencies": {
 		"axios": "^1.5.0",
-		"ejs": "^3.1.8",
 		"ivip-utils": "^1.0.6"
 	},
 	"devDependencies": {
 		"@types/node": "^18.17.11",
 		"@typescript-eslint/eslint-plugin": "^6.2.1",
 		"@typescript-eslint/parser": "^6.2.1",
+		"ejs": "^3.1.8",
 		"eslint": "^8.46.0",
 		"esm": "^3.2.25",
 		"nodemon": "^3.0.1",

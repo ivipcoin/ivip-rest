@@ -72,7 +72,7 @@ O Cliente de API (`Client`) é uma parte fundamental da biblioteca `ivip-rest`. 
 ### Importação
 
 ```javascript
-import Client from 'ivip-rest';
+import { Client } from 'ivip-rest';
 ```
 
 ### Construtor
@@ -123,7 +123,7 @@ O objeto de configuração do cliente é usado para personalizar o comportamento
 Para começar a usar o Cliente de API, primeiro você deve criar uma instância do cliente com as configurações desejadas. Aqui está um exemplo:
 
 ```javascript
-import Client from 'ivip-rest';
+import { Client } from 'ivip-rest';
 
 const myClient = new Client({
   name: 'myClient',           // Nome personalizado para o cliente
@@ -165,7 +165,7 @@ O cliente de API possui um cache interno para armazenar respostas de solicitaç�
 Aqui está um exemplo completo de como usar o Cliente de API `ivip-rest`:
 
 ```javascript
-import Client from 'ivip-rest';
+import { Client } from 'ivip-rest';
 
 // Configurar o cliente
 const myClient = new Client({

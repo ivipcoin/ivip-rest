@@ -1,6 +1,3 @@
-export { default as Client } from "./Client";
-
-export * from "./API";
-import fetch from "./API";
-
+export * from "./index.node";
+import fetch from "./index.node";
 export default fetch;

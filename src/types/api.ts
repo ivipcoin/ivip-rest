@@ -1,5 +1,5 @@
 import type { AxiosHeaders, RawAxiosRequestHeaders } from "axios";
-import { RestMethod } from ".";
+import type { RestMethod, urlParams } from ".";
 
 export interface FetchResponse<Data = any> {
 	status: number;
@@ -19,6 +19,16 @@ export interface FetchBody {
 export interface FetchConfig {
 	method: RestMethod;
 	body?: FetchBody;
+	params?: urlParams;
 	headers: RawAxiosRequestHeaders | AxiosHeaders;
 	expirySeconds?: number;
+	timeout?: number;
+	auth?: { username: string; password: string };
+	responseType?: "arraybuffer" | "document" | "json" | "text" | "stream" | "blob";
+	responseEncoding?: string;
+	onUploadProgress?: (progressEvent: number) => void;
+	onDownloadProgress?: (progressEvent: number) => void;
+	maxContentLength?: number;
+	maxBodyLength?: number;
+	validateStatus?: (status: number) => boolean;
 }

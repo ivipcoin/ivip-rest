@@ -26,7 +26,7 @@ Este projeto ainda está em desenvolvimento ativo e não está pronto para uso e
     - [Propriedades](#propriedades)
       - [`app`](#app)
     - [Métodos](#métodos)
-      - [`fetch(route: string, config?: Partial<ClientFetchConfig>): Promise<FetchResponse>`](#fetchroute-string-config-partialclientfetchconfig-promisefetchresponse)
+      - [`fetch(route: string, config?: Partial<FetchConfig>): Promise<FetchResponse>`](#fetchroute-string-config-partialfetchconfig-promisefetchresponse)
     - [Configuração](#configuração)
       - [`ClientConfig`](#clientconfig)
     - [Uso](#uso)
@@ -89,7 +89,7 @@ import { Client } from 'ivip-rest';
 
 ### Métodos
 
-#### `fetch(route: string, config?: Partial<ClientFetchConfig>): Promise<FetchResponse>`
+#### `fetch(route: string, config?: Partial<FetchConfig>): Promise<FetchResponse>`
 
 - `route` (string): O caminho da URL para a solicitação.
 - `config` (objeto opcional): Um objeto de configuração que permite substituir temporariamente as configurações do cliente para uma solicitação específica.
@@ -115,6 +115,12 @@ O objeto de configuração do cliente é usado para personalizar o comportamento
 - `params` (string ou objeto, opcional): Parâmetros de consulta que serão anexados a todas as solicitações. Pode ser uma string no formato `'param1=value1&param2=value2'` ou um objeto `{ param1: 'value1', param2: 'value2' }`. O padrão é `''` (nenhum parâmetro).
 
 - `headers` (objeto, opcional): Cabeçalhos HTTP personalizados que serão enviados com todas as solicitações. O padrão é `{}` (nenhum cabeçalho personalizado).
+
+- `requestInterceptor` (função, opcional): Uma função que recebe as informações da solicitação (método, URL, corpo e cabeçalhos) como argumento e pode processar ou modificar essas informações antes que a solicitação seja enviada ao servidor. Útil para adicionar cabeçalhos de autenticação, fazer transformações nos dados de entrada, etc.
+
+- `responseInterceptor` (função, opcional): Uma função que recebe a resposta HTTP (status, dados, cabeçalhos e erro, se houver) como argumento e pode processar ou modificar essa resposta antes que ela seja entregue ao código que fez a solicitação original. Útil para manipular erros comuns, lidar com autenticação, realizar transformações nos dados de saída, etc.
+
+- `adapter`: `adapter` permite o tratamento personalizado de solicitações, o que facilita o teste. Retorna uma promessa e fornece uma resposta válida.
 
 ### Uso
 
@@ -318,6 +324,7 @@ A função `fetch` tem várias sobrecargas para acomodar diferentes casos de uso
        'Content-Type': 'application/json',
        'Authorization': 'Bearer <token>',
      },
+     expirySeconds: 15
    };
    const response = await fetch('/api/user', data, config);
    ```

@@ -17,10 +17,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Client = void 0;
-var Client_1 = require("./Client");
-Object.defineProperty(exports, "Client", { enumerable: true, get: function () { return __importDefault(Client_1).default; } });
-__exportStar(require("./API"), exports);
-const API_1 = __importDefault(require("./API"));
-exports.default = API_1.default;
+__exportStar(require("./index.node"), exports);
+const index_node_1 = __importDefault(require("./index.node"));
+exports.default = index_node_1.default;
 //# sourceMappingURL=index.js.map

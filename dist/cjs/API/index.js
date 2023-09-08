@@ -6,6 +6,15 @@ const App_1 = require("../App");
 const arrayInArray = (arr1, arr2) => {
     return arr1.every((value) => arr2.includes(value));
 };
+/**
+ * Função que realiza uma solicitação HTTP usando o cliente de API configurado.
+ *
+ * @function
+ * @param {string} route - O caminho da rota da solicitação.
+ * @param {FetchBody} [body] - O corpo da solicitação, se aplicável.
+ * @param {FetchConfig} [config] - Configurações adicionais da solicitação.
+ * @returns {Fetch} - Uma promessa que resolve na resposta da solicitação.
+ */
 function fetch(...args) {
     let cachePromise = (0, internal_1.getCacheBy)(args);
     if (cachePromise) {
@@ -44,6 +53,13 @@ function fetch(...args) {
     }), config.expirySeconds);
 }
 exports.fetch = fetch;
+/**
+ * Função para obter um objeto de cliente de API pré-configurado por nome.
+ *
+ * @function
+ * @param {string} name - O nome do cliente de API pré-configurado.
+ * @returns {Object} - Um objeto contendo a função `fetch` do cliente de API.
+ */
 function api(name) {
     const app = (0, App_1.getApp)(name);
     return {
@@ -51,5 +67,15 @@ function api(name) {
     };
 }
 exports.api = api;
+/**
+ * Exportação padrão da função `fetch`. Pode ser usada diretamente ou através da função `api`.
+ *
+ * @default
+ * @function
+ * @param {string} route - O caminho da rota da solicitação.
+ * @param {FetchBody} [body] - O corpo da solicitação, se aplicável.
+ * @param {FetchConfig} [config] - Configurações adicionais da solicitação.
+ * @returns {Fetch} - Uma promessa que resolve na resposta da solicitação.
+ */
 exports.default = fetch;
 //# sourceMappingURL=index.js.map

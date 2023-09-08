@@ -1,4 +1,4 @@
-import fetch, { Client } from "../src";
+import fetch, { Client, Server } from "../src";
 
 new Client({
 	protocol: "https",

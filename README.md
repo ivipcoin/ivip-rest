@@ -126,7 +126,7 @@ Para começar a usar o Cliente de API, primeiro você deve criar uma instância 
 import { Client } from 'ivip-rest';
 
 const myClient = new Client({
-  name: 'myClient',           // Nome personalizado para o cliente
+  //name: 'myApi',           // Nome personalizado para o cliente
   protocol: 'https',         // Protocolo HTTPS
   host: 'api.example.com',   // Host do servidor
   port: 443,                 // Porta HTTPS padrão
@@ -146,12 +146,14 @@ const myClient = new Client({
 Com o cliente configurado, você pode realizar solicitações HTTP usando o método `fetch`. Aqui estão alguns exemplos:
 
 ```javascript
+import fetch from 'ivip-rest';
+
 // Realizar uma solicitação GET simples
-const response = await myClient.fetch('/resource');
+const response = await fetch('/resource');
 
 // Realizar uma solicitação POST com corpo de dados
 const requestData = { name: 'John', age: 30 };
-const response = await myClient.fetch('/create', requestData, { method: 'post' });
+const response = await fetch('/create', requestData, { method: 'post' });
 ```
 
 O objeto `response` retornado contém informações sobre a resposta da solicitação, incluindo o status HTTP, os dados da resposta e os cabeçalhos.
@@ -165,11 +167,11 @@ O cliente de API possui um cache interno para armazenar respostas de solicitaç�
 Aqui está um exemplo completo de como usar o Cliente de API `ivip-rest`:
 
 ```javascript
-import { Client } from 'ivip-rest';
+import fetch, { Client } from 'ivip-rest';
 
 // Configurar o cliente
 const myClient = new Client({
-  name: 'myClient',
+  //name: 'myApi',
   protocol: 'https',
   host: 'api.example.com',
   port: 443,
@@ -184,7 +186,7 @@ const myClient = new Client({
 });
 
 // Realizar uma solicitação GET
-const response = await myClient.fetch('/resource');
+const response = await fetch('/resource');
 
 // Verificar a resposta
 if (response.status === 200) {
@@ -239,8 +241,8 @@ A função `api` é útil quando você já configurou um cliente `Client` e dese
 ```javascript
 import { api } from 'ivip-rest';
 
-// Obtém um objeto de API configurado a partir do cliente 'myClient'
-const myApi = api('myClient');
+// Obtém um objeto de API configurado a partir do cliente 'myApi'
+const myApi = api('myApi');
 
 // Agora você pode usar myApi para fazer solicitações HTTP
 const response = await myApi.fetch('/api/data');

@@ -39,11 +39,11 @@ export function fetch(this: any, ...args: any[]): Fetch {
 
 				let app = this ?? {};
 
-				if (!app.fetch || typeof app.fetch !== "function") {
+				if (!app.fetch || typeof app.__fetch !== "function") {
 					app = appExists(DEFAULT_ENTRY_NAME) ? getApp(DEFAULT_ENTRY_NAME) : getFirstApp();
 				}
 
-				app.fetch(route, config).then(resolve).catch(reject);
+				app.__fetch(route, config).then(resolve).catch(reject);
 			} catch (e) {
 				reject({
 					status: 404,

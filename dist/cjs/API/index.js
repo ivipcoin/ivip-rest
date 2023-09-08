@@ -28,10 +28,10 @@ function fetch(...args) {
         try {
             config.body = Object.assign({}, body !== null && body !== void 0 ? body : {}, (_a = config.body) !== null && _a !== void 0 ? _a : {});
             let app = this !== null && this !== void 0 ? this : {};
-            if (!app.fetch || typeof app.fetch !== "function") {
+            if (!app.fetch || typeof app.__fetch !== "function") {
                 app = (0, App_1.appExists)(App_1.DEFAULT_ENTRY_NAME) ? (0, App_1.getApp)(App_1.DEFAULT_ENTRY_NAME) : (0, App_1.getFirstApp)();
             }
-            app.fetch(route, config).then(resolve).catch(reject);
+            app.__fetch(route, config).then(resolve).catch(reject);
         }
         catch (e) {
             reject({

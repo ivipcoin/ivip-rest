@@ -99,7 +99,7 @@ export default class Client {
 		this.app = initializeApp<Client, IvipRestClientSettings>(this, this._config);
 	}
 
-	fetch(route: string, config: Partial<ClientFetchConfig> = {}): Promise<FetchResponse> {
+	__fetch(route: string, config: Partial<ClientFetchConfig> = {}): Promise<FetchResponse> {
 		const { method = "POST", headers = {}, body = {} } = config;
 
 		const url = this._config.apiUrl(route).replace(/$\//gi, "") + "/" + route.replace(/^\//gi, "");

@@ -97,7 +97,7 @@ class Client {
         this._config = new IvipRestClientSettings(config);
         this.app = (0, App_1.initializeApp)(this, this._config);
     }
-    fetch(route, config = {}) {
+    __fetch(route, config = {}) {
         const { method = "POST", headers = {}, body = {} } = config;
         const url = this._config.apiUrl(route).replace(/$\//gi, "") + "/" + route.replace(/^\//gi, "");
         return new Promise((resolve, reject) => {

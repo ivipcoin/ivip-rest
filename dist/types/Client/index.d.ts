@@ -24,7 +24,7 @@ export default class Client {
     readonly app: IvipRestAppImpl<Client, IvipRestClientSettings>;
     private _config;
     constructor(config: Partial<Omit<IvipRestClientSettings, "apiUrl" | "isLocalhost" | "axiosHeaders" | "type">>);
-    fetch(route: string, config?: Partial<ClientFetchConfig>): Promise<FetchResponse>;
+    __fetch(route: string, config?: Partial<ClientFetchConfig>): Promise<FetchResponse>;
 }
 export {};
 //# sourceMappingURL=index.d.ts.map

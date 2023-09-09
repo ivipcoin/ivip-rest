@@ -19,6 +19,8 @@ Este projeto ainda está em desenvolvimento ativo e não está pronto para uso e
   - [Recursos Planejados](#recursos-planejados)
   - [Índice](#índice)
   - [Como Começar](#como-começar)
+  - [Cliente de API (Client)](#cliente-de-api-client)
+    - [Importação](#importação)
     - [Construtor](#construtor)
       - [`new Client(config: Partial<ClientConfig>)`](#new-clientconfig-partialclientconfig)
     - [Propriedades](#propriedades)
@@ -51,23 +53,26 @@ Para começar a usar a biblioteca `ivip-rest`, siga estas etapas:
 
 1. Instale a biblioteca via npm ou yarn:
 
-   ```bash
-   npm install ivip-rest
-   # ou
-   yarn add ivip-rest
-   ```
+    ```bash
+    npm install ivip-rest
+    # ou
+    yarn add ivip-rest
+    ```
 
 2. Importe os módulos necessários em seu código:
 
-   ```typescript
-   import fetch, { Client, api } from 'ivip-rest';
-   ```
+    ```typescript
+    import fetch, { Client, api } from 'ivip-rest';
+    ```
 
-   OU, se quiser usar o cliente no navegador, use o seguinte código:
+    OU, se quiser usar o cliente no navegador, use o seguinte código:
 
-   ```html
+    ```html
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/ivip-rest@latest/dist/browser.min.js"></script>
+    ```
 
+    Exemplo de uso:
+    ```html
     <script type="text/javascript">
         const { Client, fetch } = ivipRest;
 

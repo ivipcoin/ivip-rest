@@ -73,11 +73,11 @@ Para começar a usar a biblioteca `ivip-rest`, siga estas etapas:
 
         new Client({
             protocol: "https",
-            host: "ivipcoin-api.com",
-            responseInterceptor: ({ data })=> data,
+            host: "api.ipify.org",
+            path: "?format=json",
         });
 
-        fetch("version").then(console.log).catch(console.log);
+        fetch("/").then(console.log).catch(console.log);
     </script>
     ```
 

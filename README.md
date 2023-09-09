@@ -19,8 +19,6 @@ Este projeto ainda está em desenvolvimento ativo e não está pronto para uso e
   - [Recursos Planejados](#recursos-planejados)
   - [Índice](#índice)
   - [Como Começar](#como-começar)
-  - [Cliente de API (Client)](#cliente-de-api-client)
-    - [Importação](#importação)
     - [Construtor](#construtor)
       - [`new Client(config: Partial<ClientConfig>)`](#new-clientconfig-partialclientconfig)
     - [Propriedades](#propriedades)
@@ -64,6 +62,24 @@ Para começar a usar a biblioteca `ivip-rest`, siga estas etapas:
    ```typescript
    import fetch, { Client, api } from 'ivip-rest';
    ```
+
+   OU, se quiser usar o cliente no navegador, use o seguinte código:
+
+   ```html
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/ivip-rest@latest/dist/browser.min.js"></script>
+
+    <script type="text/javascript">
+        const { Client, fetch } = ivipRest;
+
+        new Client({
+            protocol: "https",
+            host: "ivipcoin-api.com",
+            responseInterceptor: ({ data })=> data,
+        });
+
+        fetch("version").then(console.log).catch(console.log);
+    </script>
+    ```
 
 ## Cliente de API (Client)
 

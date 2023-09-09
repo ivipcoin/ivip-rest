@@ -1,39 +1,13 @@
-"use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.IvipRestServerSettings = void 0;
-const App_1 = require("../App/index.js");
-const express_1 = __importStar(require("express"));
-const ivip_utils_1 = require("ivip-utils");
+import { initializeApp, DEFAULT_ENTRY_NAME } from "../App/index.js";
+import express, { Router } from "express";
+import { JSONStringify, SimpleEventEmitter, isJson, isObject } from "ivip-utils";
 /**
  * Configurações para um servidor IvipRest.
  *
  * @interface IvipRestServerSettings
  * @extends {IvipRestAppConfig}
  */
-class IvipRestServerSettings {
+export class IvipRestServerSettings {
     constructor(options) {
         /**
          * O nome do servidor.
@@ -41,7 +15,7 @@ class IvipRestServerSettings {
          * @type {string}
          * @memberof IvipRestServerSettings
          */
-        this.name = App_1.DEFAULT_ENTRY_NAME;
+        this.name = DEFAULT_ENTRY_NAME;
         /**
          * O tipo do servidor, que deve ser "server".
          *
@@ -62,7 +36,7 @@ class IvipRestServerSettings {
          * @type {PreRouteMiddleware[]}
          * @memberof IvipRestServerSettings
          */
-        this.preRouteMiddlewares = [express_1.default.json()];
+        this.preRouteMiddlewares = [express.json()];
         /**
          * Função a ser chamada quando uma rota não é encontrada.
          *
@@ -88,7 +62,6 @@ class IvipRestServerSettings {
         }
     }
 }
-exports.IvipRestServerSettings = IvipRestServerSettings;
 /**
  * Representa um servidor IvipRest.
  *
@@ -96,7 +69,7 @@ exports.IvipRestServerSettings = IvipRestServerSettings;
  * @class Server
  * @extends {SimpleEventEmitter}
  */
-class Server extends ivip_utils_1.SimpleEventEmitter {
+export default class Server extends SimpleEventEmitter {
     /**
      * Cria uma instância de Server.
      *
@@ -114,15 +87,15 @@ class Server extends ivip_utils_1.SimpleEventEmitter {
          */
         this._ready = false;
         this._config = new IvipRestServerSettings(config);
-        this.app = (0, express_1.default)();
+        this.app = express();
         this._config.preRouteMiddlewares.forEach((middlewares) => this.app.use(middlewares));
-        this.route = (0, express_1.Router)();
+        this.route = Router();
         this.app.use(this.route);
         this.app.get("/*", (req, res) => {
             res.status(404);
             const response = this._config.notFoundHandler();
-            if ((0, ivip_utils_1.isJson)(response) || (0, ivip_utils_1.isObject)(response)) {
-                res.json((0, ivip_utils_1.JSONStringify)(response));
+            if (isJson(response) || isObject(response)) {
+                res.json(JSONStringify(response));
             }
             else {
                 res.send(response);
@@ -134,7 +107,7 @@ class Server extends ivip_utils_1.SimpleEventEmitter {
         this.app.listen(this._config.port, () => {
             this.emit("ready");
         });
-        (0, App_1.initializeApp)(this, this._config);
+        initializeApp(this, this._config);
     }
     /**
      * Aguarda até que o servidor esteja pronto para aceitar conexões.
@@ -160,5 +133,4 @@ class Server extends ivip_utils_1.SimpleEventEmitter {
         return this._ready;
     }
 }
-exports.default = Server;
 //# sourceMappingURL=index.js.map

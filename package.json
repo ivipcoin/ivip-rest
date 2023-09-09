@@ -1,6 +1,6 @@
 {
 	"name": "ivip-rest",
-	"version": "1.1.0",
+	"version": "1.1.4",
 	"description": "O módulo `ivip-rest` é uma poderosa biblioteca Node.js desenvolvida para simplificar e aprimorar o gerenciamento de requisições e respostas de API em aplicações web. Com este módulo, você pode configurar facilmente servidores Express, criar clientes de API, e realizar requisições HTTP de maneira intuitiva e eficiente.",
 	"comments": {
 		"browser": "Consulte README.md para obter mais informações sobre ivip-rest para webpack/browserify",
@@ -17,11 +17,12 @@
 	"repository": "github:ivipcoin/ivip-rest",
 	"scripts": {
 		"dev": "nodemon ./test",
-		"build": "npm run build:clean && npm run build:esm && npm run build:cjs && npm run build:packages && echo Done!",
+		"build": "npm run build:clean && npm run build:esm && npm run build:cjs && npm run build:packages && npm run browserify && echo Done!",
 		"build:clean": "rimraf dist",
-		"build:esm": "tsc -p tsconfig.json && npx tsc-esm-fix ---target='dist/esm'",
+		"build:esm": "tsc -p tsconfig-esm.json && npx tsc-esm-fix ---target='dist/esm'",
 		"build:cjs": "tsc -p tsconfig-cjs.json",
 		"build:packages": "bash ./create-package-files",
+		"browserify": "webpack --config webpack.config.js && terser dist/browser.js -o dist/browser.min.js",
 		"npm:publish": "npm run build && npm pack && npm publish --access public && echo published!"
 	},
 	"keywords": [
@@ -67,7 +68,7 @@
 	"dependencies": {
 		"axios": "^1.5.0",
 		"express": "^4.18.2",
-		"ivip-utils": "^1.0.6"
+		"ivip-utils": "^1.1.0"
 	},
 	"devDependencies": {
 		"@types/express": "^4.17.17",
@@ -79,10 +80,13 @@
 		"esm": "^3.2.25",
 		"nodemon": "^3.0.1",
 		"rimraf": "^5.0.1",
+		"terser": "^5.19.4",
 		"ts-node": "^10.9.1",
 		"tsc-esm-fix": "^2.20.14",
 		"tsconfig-paths": "^4.1.2",
-		"typescript": "^5.0.2"
+		"typescript": "^5.0.2",
+		"webpack": "^5.61.0",
+		"webpack-cli": "^5.1.4"
 	},
 	"nodemonConfig": {
 		"restartable": "rs",

@@ -214,7 +214,8 @@ export default class Client {
 	__fetch(route: string, config: Partial<FetchConfig> = {}): Promise<FetchResponse> {
 		const { method = "POST", headers = {}, body = {}, params = {}, ...axiosConfig } = this._config.requestInterceptor(config);
 
-		const url = this._config.apiUrl(route, params).replace(/$\//gi, "") + "/" + route.replace(/^\//gi, "");
+		let [url, formatParams = ""] = this._config.apiUrl(route, params).split("?");
+		url = url.replace(/$\//gi, "") + "/" + route.replace(/^\//gi, "") + (formatParams.trim() !== "" ? "?" + formatParams : "");
 
 		return new Promise((resolve, reject) => {
 			axios({

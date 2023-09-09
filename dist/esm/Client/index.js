@@ -1,37 +1,11 @@
-"use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.IvipRestClientSettings = void 0;
-const axios_1 = __importStar(require("axios"));
-const ivip_utils_1 = require("ivip-utils");
-const App_1 = require("../App/index.js");
+import axios, { AxiosHeaders } from "axios";
+import { isString, isArray, isNumber, isBoolean, getAllUrlParams, objectToUrlParams } from "ivip-utils";
+import { initializeApp, DEFAULT_ENTRY_NAME } from "../App/index.js";
 /**
  * Configurações para um cliente Ivip Rest.
  * @class
  */
-class IvipRestClientSettings {
+export class IvipRestClientSettings {
     /**
      * Cria uma instância de IvipRestClientSettings.
      * @constructor
@@ -43,7 +17,7 @@ class IvipRestClientSettings {
          * @readonly
          * @type {string}
          */
-        this.name = App_1.DEFAULT_ENTRY_NAME;
+        this.name = DEFAULT_ENTRY_NAME;
         /**
          * O tipo de cliente, que pode ser "server" ou "client".
          * @readonly
@@ -143,7 +117,7 @@ class IvipRestClientSettings {
         }
         const joinParams = [path, params, ...urlParams]
             .map((p) => {
-            return (0, ivip_utils_1.objectToUrlParams)(typeof p === "string" ? (0, ivip_utils_1.getAllUrlParams)(p) : typeof p === "object" ? p : {});
+            return objectToUrlParams(typeof p === "string" ? getAllUrlParams(p) : typeof p === "object" ? p : {});
         })
             .filter((p) => p.trim() !== "")
             .join("&");
@@ -166,21 +140,20 @@ class IvipRestClientSettings {
      * @type {AxiosHeaders}
      */
     get axiosHeaders() {
-        const headers = new axios_1.AxiosHeaders();
+        const headers = new AxiosHeaders();
         Object.entries(this.headers).forEach(([header, value]) => {
-            if ((0, ivip_utils_1.isString)(value) || ((0, ivip_utils_1.isArray)(value) && value.every(ivip_utils_1.isString)) || (0, ivip_utils_1.isNumber)(value) || (0, ivip_utils_1.isBoolean)(value) || value === null) {
+            if (isString(value) || (isArray(value) && value.every(isString)) || isNumber(value) || isBoolean(value) || value === null) {
                 headers.set(header, value);
             }
         });
         return headers;
     }
 }
-exports.IvipRestClientSettings = IvipRestClientSettings;
 /**
  * Cliente Ivip Rest para fazer solicitações à API.
  * @class
  */
-class Client {
+export default class Client {
     /**
      * Cria uma instância de Client.
      * @constructor
@@ -188,7 +161,7 @@ class Client {
      */
     constructor(config) {
         this._config = new IvipRestClientSettings(config);
-        (0, App_1.initializeApp)(this, this._config);
+        initializeApp(this, this._config);
     }
     /**
      * Realiza uma solicitação à API.
@@ -198,9 +171,10 @@ class Client {
      */
     __fetch(route, config = {}) {
         const { method = "POST", headers = {}, body = {}, params = {}, ...axiosConfig } = this._config.requestInterceptor(config);
-        const url = this._config.apiUrl(route, params).replace(/$\//gi, "") + "/" + route.replace(/^\//gi, "");
+        let [url, formatParams = ""] = this._config.apiUrl(route, params).split("?");
+        url = url.replace(/$\//gi, "") + "/" + route.replace(/^\//gi, "") + (formatParams.trim() !== "" ? "?" + formatParams : "");
         return new Promise((resolve, reject) => {
-            (0, axios_1.default)({
+            axios({
                 method: method,
                 url,
                 headers: this._config.axiosHeaders.concat(headers),
@@ -231,5 +205,4 @@ class Client {
         });
     }
 }
-exports.default = Client;
 //# sourceMappingURL=index.js.map

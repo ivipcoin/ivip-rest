@@ -1,16 +1,13 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteApp = exports.getFirstApp = exports.getApps = exports.getApp = exports.appExists = exports.initializeApp = exports.IvipRestAppImpl = exports.IvipRestSettings = exports.DEFAULT_ENTRY_NAME = void 0;
-const internal_1 = require("./internal.js");
-const ivip_utils_1 = require("ivip-utils");
+import { _apps } from "./internal.js";
+import { deepEqual } from "ivip-utils";
 /**
  * Nome padrão para a entrada de cliente "default".
  */
-exports.DEFAULT_ENTRY_NAME = "[DEFAULT]";
+export const DEFAULT_ENTRY_NAME = "[DEFAULT]";
 /**
  * Configurações da instância IvipRest.
  */
-class IvipRestSettings {
+export class IvipRestSettings {
     /**
      * Cria uma nova instância de configurações IvipRest.
      * @param options - Opções de configuração.
@@ -19,7 +16,7 @@ class IvipRestSettings {
         /**
          * Nome da instância IvipRest.
          */
-        this.name = exports.DEFAULT_ENTRY_NAME;
+        this.name = DEFAULT_ENTRY_NAME;
         /**
          * Tipo da instância IvipRest, que pode ser "server" ou "client".
          */
@@ -35,11 +32,10 @@ class IvipRestSettings {
         }
     }
 }
-exports.IvipRestSettings = IvipRestSettings;
 /**
  * Implementação da instância IvipRest.
  */
-class IvipRestAppImpl {
+export class IvipRestAppImpl {
     /**
      * Cria uma nova instância IvipRest.
      * @param app - Aplicação associada.
@@ -96,14 +92,13 @@ class IvipRestAppImpl {
         }
     }
 }
-exports.IvipRestAppImpl = IvipRestAppImpl;
 /**
  * Inicializa uma nova instância IvipRest.
  * @param app - Aplicação associada.
  * @param config - Configurações da instância IvipRest.
  * @returns A instância IvipRest inicializada.
  */
-function initializeApp(app, config = {}) {
+export function initializeApp(app, config = {}) {
     const options = new IvipRestSettings(config);
     const name = options.name;
     if (typeof name !== "string" || !name) {
@@ -112,10 +107,10 @@ function initializeApp(app, config = {}) {
         // });
         throw "";
     }
-    const existingApp = internal_1._apps.get(name);
+    const existingApp = _apps.get(name);
     if (existingApp) {
         // return the existing app if options and config deep equal the ones in the existing app.
-        if ((0, ivip_utils_1.deepEqual)(options, existingApp.options) && (0, ivip_utils_1.deepEqual)(config, existingApp.config ?? {})) {
+        if (deepEqual(options, existingApp.options) && deepEqual(config, existingApp.config ?? {})) {
             return existingApp;
         }
         else {
@@ -124,46 +119,42 @@ function initializeApp(app, config = {}) {
         }
     }
     const newApp = new IvipRestAppImpl(app, config, options);
-    internal_1._apps.set(name, newApp);
+    _apps.set(name, newApp);
     return newApp;
 }
-exports.initializeApp = initializeApp;
 /**
  * Verifica se uma instância IvipRest com o nome especificado existe.
  * @param name - Nome da instância a ser verificada.
  * @returns `true` se a instância existir, `false` caso contrário.
  */
-function appExists(name) {
-    return typeof name === "string" && internal_1._apps.has(name);
+export function appExists(name) {
+    return typeof name === "string" && _apps.has(name);
 }
-exports.appExists = appExists;
 /**
  * Obtém uma instância IvipRest pelo nome.
  * @param name - Nome da instância a ser obtida.
  * @returns A instância IvipRest associada ao nome especificado.
  */
-function getApp(name = exports.DEFAULT_ENTRY_NAME) {
-    const { app } = internal_1._apps.get(name) ?? {};
+export function getApp(name = DEFAULT_ENTRY_NAME) {
+    const { app } = _apps.get(name) ?? {};
     if (!app) {
         //throw ERROR_FACTORY.create(AppError.NO_APP, { appName: name });
         throw "";
     }
     return app;
 }
-exports.getApp = getApp;
 /**
  * Obtém todas as instâncias IvipRest.
  * @returns Um array contendo todas as instâncias IvipRest disponíveis.
  */
-function getApps() {
-    return Array.from(internal_1._apps.values());
+export function getApps() {
+    return Array.from(_apps.values());
 }
-exports.getApps = getApps;
 /**
  * Obtém a primeira instância IvipRest encontrada.
  * @returns A primeira instância IvipRest disponível.
  */
-function getFirstApp() {
+export function getFirstApp() {
     const { app } = getApps()[0];
     if (!app) {
         //throw ERROR_FACTORY.create(AppError.NO_APP, { appName: name });
@@ -171,17 +162,15 @@ function getFirstApp() {
     }
     return app;
 }
-exports.getFirstApp = getFirstApp;
 /**
  * Exclui uma instância IvipRest.
  * @param app - A instância IvipRest a ser excluída.
  */
-function deleteApp(app) {
+export function deleteApp(app) {
     const name = app.name;
-    if (internal_1._apps.has(name)) {
-        internal_1._apps.delete(name);
+    if (_apps.has(name)) {
+        _apps.delete(name);
         app.isDeleted = true;
     }
 }
-exports.deleteApp = deleteApp;
 //# sourceMappingURL=index.js.map

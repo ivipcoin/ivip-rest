@@ -209,7 +209,8 @@ class Client {
      */
     __fetch(route, config = {}) {
         const _a = this._config.requestInterceptor(config), { method = "POST", headers = {}, body = {}, params = {} } = _a, axiosConfig = __rest(_a, ["method", "headers", "body", "params"]);
-        const url = this._config.apiUrl(route, params).replace(/$\//gi, "") + "/" + route.replace(/^\//gi, "");
+        let [url, formatParams = ""] = this._config.apiUrl(route, params).split("?");
+        url = url.replace(/$\//gi, "") + "/" + route.replace(/^\//gi, "") + (formatParams.trim() !== "" ? "?" + formatParams : "");
         return new Promise((resolve, reject) => {
             (0, axios_1.default)(Object.assign({ method: method, url, headers: this._config.axiosHeaders.concat(headers), data: body }, axiosConfig))
                 .then(({ status, statusText, data, headers }) => {

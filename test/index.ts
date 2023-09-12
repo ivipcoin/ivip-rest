@@ -1,4 +1,5 @@
-import fetch, { Client } from "../src";
+import fetch, { Client, Server } from "../src/index.node";
+//import { Client, Server } from "../dist/esm";
 
 new Client({
 	protocol: "https",

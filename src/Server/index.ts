@@ -1,5 +1,5 @@
 import type { IvipRestAppConfig } from "../types/app";
-import type { PreRouteMiddleware } from "../types/server";
+import type { FunctionRouteUtils, PreRouteMiddleware } from "../types/server";
 import { initializeApp, DEFAULT_ENTRY_NAME } from "../App";
 import express, { Express, Router } from "express";
 import { JSONStringify, SimpleEventEmitter, isJson, isObject } from "ivip-utils";
@@ -10,7 +10,7 @@ import { JSONStringify, SimpleEventEmitter, isJson, isObject } from "ivip-utils"
  * @interface IvipRestServerSettings
  * @extends {IvipRestAppConfig}
  */
-export class IvipRestServerSettings implements IvipRestAppConfig {
+export class IvipRestServerSettings<RouteResources = any> implements IvipRestAppConfig {
 	/**
 	 * O nome do servidor.
 	 *
@@ -18,6 +18,10 @@ export class IvipRestServerSettings implements IvipRestAppConfig {
 	 * @memberof IvipRestServerSettings
 	 */
 	readonly name: string = DEFAULT_ENTRY_NAME;
+
+	readonly routesPath: string | undefined;
+
+	readonly resources: FunctionRouteUtils & RouteResources = {} as any;
 
 	/**
 	 * O tipo do servidor, que deve ser "server".
@@ -60,6 +64,14 @@ export class IvipRestServerSettings implements IvipRestAppConfig {
 			this.name = options.name;
 		}
 
+		if (typeof options.routesPath === "string") {
+			this.routesPath = options.routesPath;
+		}
+
+		if (typeof options.resources === "object") {
+			this.resources = { ...this.resources, ...options.resources };
+		}
+
 		if (typeof options.notFoundHandler === "function") {
 			this.notFoundHandler = options.notFoundHandler;
 		}
@@ -81,7 +93,7 @@ export class IvipRestServerSettings implements IvipRestAppConfig {
  * @class Server
  * @extends {SimpleEventEmitter}
  */
-export default class Server extends SimpleEventEmitter {
+export default class Server<RouteResources = any> extends SimpleEventEmitter {
 	/**
 	 * A instância do aplicativo Express associada a este servidor.
 	 *
@@ -107,7 +119,7 @@ export default class Server extends SimpleEventEmitter {
 	 * @type {IvipRestServerSettings}
 	 * @memberof Server
 	 */
-	private _config: IvipRestServerSettings;
+	private _config: IvipRestServerSettings<RouteResources>;
 
 	/**
 	 * Indica se o servidor está pronto para aceitar conexões.
@@ -127,7 +139,16 @@ export default class Server extends SimpleEventEmitter {
 	constructor(config: Partial<Omit<IvipRestServerSettings, "type">>) {
 		super();
 
-		this._config = new IvipRestServerSettings(config);
+		this._config = new IvipRestServerSettings<RouteResources>(config);
+
+		this._config.resources.dispatch = () => {};
+		this._config.resources.request = (res) => res;
+		this._config.resources.requiresAccess = () => true;
+
+		if (!this._config.routesPath) {
+			throw "You must specify the path of the routes for the assembly!";
+		}
+
 		this.app = express();
 
 		this._config.preRouteMiddlewares.forEach((middlewares) => this.app.use(middlewares));

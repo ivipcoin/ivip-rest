@@ -1,4 +1,4 @@
-import fetch, { Client, Server } from "../src";
+import fetch, { Client } from "../src";
 
 new Client({
 	protocol: "https",
@@ -6,4 +6,4 @@ new Client({
 	path: "?format=json",
 });
 
-fetch("/").then(console.log).catch(console.log);
+// fetch("/").then(console.log).catch(console.log);

@@ -113,10 +113,10 @@ export default class RouteComponent<RouteResources = any> {
 		const methods = Array.isArray(method) ? method : typeof method === "string" ? [method] : [];
 
 		for (let method of methods) {
-			if (method in config && typeof config[method] === "function") {
-				component[method] = config[method];
+			if (method in config && typeof (config as any)[method] === "function") {
+				(component as any)[method] = (config as any)[method];
 			} else if (fn.findIndex((fn) => typeof fn === "function") >= 0) {
-				component[method] = fn.filter((fn) => typeof fn === "function");
+				(component as any)[method] = fn.filter((fn) => typeof fn === "function");
 			}
 		}
 
@@ -185,17 +185,17 @@ export default class RouteComponent<RouteResources = any> {
 				}
 
 				if (onlyAuthorizedRequest && resources && typeof resources.checkAuthorization === "function") {
-					if (!request["approvedRequest"] && !request["requiredAuthorization"]) {
+					if (!(request as any)["approvedRequest"] && !(request as any)["requiredAuthorization"]) {
 						try {
-							request["approvedRequest"] = await resources.checkAuthorization(request).catch(() => Promise.resolve(false));
+							(request as any)["approvedRequest"] = await resources.checkAuthorization(request as any).catch(() => Promise.resolve(false));
 						} catch {
-							request["approvedRequest"] = false;
+							(request as any)["approvedRequest"] = false;
 						}
 
-						request["requiredAuthorization"] = true;
+						(request as any)["requiredAuthorization"] = true;
 					}
 
-					if (!request["approvedRequest"]) {
+					if (!(request as any)["approvedRequest"]) {
 						return this.unauthorizedRequest(0);
 					}
 				}
@@ -218,7 +218,7 @@ export default class RouteComponent<RouteResources = any> {
 				operationsRoute = Array.isArray(operationsRoute) ? operationsRoute : [operationsRoute];
 
 				const next = async (request: Request, resources: FunctionRouteUtils & RouteResources, index = 0) => {
-					const fn = operationsRoute[index];
+					const fn = (operationsRoute as any)[index];
 
 					return await fn.apply({ ...this, request, body, params, query, headers, dispatch: resources.dispatch }, [
 						Object.assign(request, { body, params, query, headers }),

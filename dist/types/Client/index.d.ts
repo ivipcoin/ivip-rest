@@ -96,7 +96,7 @@ export declare class IvipRestClientSettings implements IvipRestAppConfig {
      * @readonly
      * @type {AxiosHeaders}
      */
-    get axiosHeaders(): AxiosHeaders;
+    get axiosHeaders(): typeof AxiosHeaders;
 }
 /**
  * Cliente Ivip Rest para fazer solicitações à API.

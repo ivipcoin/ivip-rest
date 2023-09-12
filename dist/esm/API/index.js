@@ -1,5 +1,8 @@
-import { getCacheBy, pushCacheBy } from "../API/internal.js";
-import { DEFAULT_ENTRY_NAME, appExists, getApp, getFirstApp } from "../App/index.js";
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.api = exports.fetch = void 0;
+const internal_1 = require("../API/internal.js");
+const App_1 = require("../App/index.js");
 const arrayInArray = (arr1, arr2) => {
     return arr1.every((value) => arr2.includes(value));
 };
@@ -12,8 +15,8 @@ const arrayInArray = (arr1, arr2) => {
  * @param {FetchConfig} [config] - Configurações adicionais da solicitação.
  * @returns {Fetch} - Uma promessa que resolve na resposta da solicitação.
  */
-export function fetch(...args) {
-    let cachePromise = getCacheBy(args);
+function fetch(...args) {
+    let cachePromise = (0, internal_1.getCacheBy)(args);
     if (cachePromise) {
         return Promise.any([cachePromise]);
     }
@@ -29,12 +32,12 @@ export function fetch(...args) {
     else if (typeof args[2] === "object" && arrayInArray(Object.keys(args[2]), ["method", "headers"])) {
         config = args[2];
     }
-    return pushCacheBy(args, new Promise(async (resolve, reject) => {
+    return (0, internal_1.pushCacheBy)(args, new Promise(async (resolve, reject) => {
         try {
             config.body = Object.assign({}, body ?? {}, config.body ?? {});
             let app = this ?? {};
             if (!app.fetch || typeof app.__fetch !== "function") {
-                app = appExists(DEFAULT_ENTRY_NAME) ? getApp(DEFAULT_ENTRY_NAME) : getFirstApp();
+                app = (0, App_1.appExists)(App_1.DEFAULT_ENTRY_NAME) ? (0, App_1.getApp)(App_1.DEFAULT_ENTRY_NAME) : (0, App_1.getFirstApp)();
             }
             app.__fetch(route, config).then(resolve).catch(reject);
         }
@@ -48,6 +51,7 @@ export function fetch(...args) {
         }
     }), config.expirySeconds);
 }
+exports.fetch = fetch;
 /**
  * Função para obter um objeto de cliente de API pré-configurado por nome.
  *
@@ -55,12 +59,13 @@ export function fetch(...args) {
  * @param {string} name - O nome do cliente de API pré-configurado.
  * @returns {Object} - Um objeto contendo a função `fetch` do cliente de API.
  */
-export function api(name) {
-    const app = getApp(name);
+function api(name) {
+    const app = (0, App_1.getApp)(name);
     return {
         fetch: fetch.bind(app),
     };
 }
+exports.api = api;
 /**
  * Exportação padrão da função `fetch`. Pode ser usada diretamente ou através da função `api`.
  *
@@ -71,5 +76,5 @@ export function api(name) {
  * @param {FetchConfig} [config] - Configurações adicionais da solicitação.
  * @returns {Fetch} - Uma promessa que resolve na resposta da solicitação.
  */
-export default fetch;
+exports.default = fetch;
 //# sourceMappingURL=index.js.map

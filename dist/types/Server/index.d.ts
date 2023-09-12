@@ -8,7 +8,7 @@ import { SimpleEventEmitter } from "ivip-utils";
  * @interface IvipRestServerSettings
  * @extends {IvipRestAppConfig}
  */
-export declare class IvipRestServerSettings implements IvipRestAppConfig {
+export declare class IvipRestServerSettings<RouteResources = any> implements IvipRestAppConfig {
     /**
      * O nome do servidor.
      *
@@ -16,6 +16,9 @@ export declare class IvipRestServerSettings implements IvipRestAppConfig {
      * @memberof IvipRestServerSettings
      */
     readonly name: string;
+    readonly routesPath: string | undefined;
+    readonly resources: RouteResources;
+    readonly watch: string[];
     /**
      * O tipo do servidor, que deve ser "server".
      *
@@ -40,10 +43,11 @@ export declare class IvipRestServerSettings implements IvipRestAppConfig {
     /**
      * Função a ser chamada quando uma rota não é encontrada.
      *
-     * @type {() => any}
+     * @type {(res: Response) => any}
      * @memberof IvipRestServerSettings
      */
-    readonly notFoundHandler: () => any;
+    readonly notFoundHandler: (res: Response) => any;
+    readonly preRequestHook: (req: Request) => Promise<void>;
     constructor(options: Partial<IvipRestServerSettings>);
 }
 /**
@@ -53,7 +57,7 @@ export declare class IvipRestServerSettings implements IvipRestAppConfig {
  * @class Server
  * @extends {SimpleEventEmitter}
  */
-export default class Server extends SimpleEventEmitter {
+export default class Server<RouteResources = any> extends SimpleEventEmitter {
     /**
      * A instância do aplicativo Express associada a este servidor.
      *

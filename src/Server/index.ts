@@ -1,8 +1,10 @@
 import type { IvipRestAppConfig } from "../types/app";
-import type { FunctionRouteUtils, PreRouteMiddleware } from "../types/server";
+import type { PreRouteMiddleware } from "../types/server";
 import { initializeApp, DEFAULT_ENTRY_NAME } from "../App";
 import express, { Express, Router } from "express";
 import { JSONStringify, SimpleEventEmitter, isJson, isObject } from "ivip-utils";
+import Result from "./Result";
+import RouteController from "./RouteController";
 
 /**
  * Configurações para um servidor IvipRest.
@@ -21,7 +23,9 @@ export class IvipRestServerSettings<RouteResources = any> implements IvipRestApp
 
 	readonly routesPath: string | undefined;
 
-	readonly resources: FunctionRouteUtils & RouteResources = {} as any;
+	readonly resources: RouteResources = {} as any;
+
+	readonly watch: string[] = [];
 
 	/**
 	 * O tipo do servidor, que deve ser "server".
@@ -50,10 +54,12 @@ export class IvipRestServerSettings<RouteResources = any> implements IvipRestApp
 	/**
 	 * Função a ser chamada quando uma rota não é encontrada.
 	 *
-	 * @type {() => any}
+	 * @type {(res: Response) => any}
 	 * @memberof IvipRestServerSettings
 	 */
-	readonly notFoundHandler: () => any = () => "Invalid summons!";
+	readonly notFoundHandler: (res: Response) => any = (res?: any) => new Result(null, "Invalid summons!", -1, res);
+
+	readonly preRequestHook: (req: Request) => Promise<void> = (req: Request) => Promise.resolve();
 
 	constructor(options: Partial<IvipRestServerSettings>) {
 		if (typeof options !== "object") {
@@ -72,6 +78,10 @@ export class IvipRestServerSettings<RouteResources = any> implements IvipRestApp
 			this.resources = { ...this.resources, ...options.resources };
 		}
 
+		if (Array.isArray(options.watch)) {
+			this.watch = options.watch.filter((p) => typeof p === "string");
+		}
+
 		if (typeof options.notFoundHandler === "function") {
 			this.notFoundHandler = options.notFoundHandler;
 		}
@@ -82,6 +92,10 @@ export class IvipRestServerSettings<RouteResources = any> implements IvipRestApp
 					this.preRouteMiddlewares.push(middlewares);
 				}
 			});
+		}
+
+		if (typeof options.preRequestHook === "function") {
+			this.preRequestHook = options.preRequestHook;
 		}
 	}
 }
@@ -141,10 +155,6 @@ export default class Server<RouteResources = any> extends SimpleEventEmitter {
 
 		this._config = new IvipRestServerSettings<RouteResources>(config);
 
-		this._config.resources.dispatch = () => {};
-		this._config.resources.request = (res) => res;
-		this._config.resources.requiresAccess = () => true;
-
 		if (!this._config.routesPath) {
 			throw "You must specify the path of the routes for the assembly!";
 		}
@@ -155,11 +165,19 @@ export default class Server<RouteResources = any> extends SimpleEventEmitter {
 
 		this.route = Router();
 
+		new RouteController<RouteResources>({
+			app: this.app,
+			routesPath: this._config.routesPath,
+			preRequestHook: this._config.preRequestHook as any,
+			resources: this._config.resources,
+			watch: this._config.watch,
+		});
+
 		this.app.use(this.route);
 
 		this.app.get("/*", (req, res) => {
 			res.status(404);
-			const response = this._config.notFoundHandler();
+			const response = this._config.notFoundHandler(res as any);
 			if (isJson(response) || isObject(response)) {
 				res.json(JSONStringify(response));
 			} else {

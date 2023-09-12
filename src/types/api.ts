@@ -20,7 +20,7 @@ export interface FetchConfig {
 	method: RestMethod;
 	body?: FetchBody;
 	params?: urlParams;
-	headers: RawAxiosRequestHeaders | AxiosHeaders;
+	headers: RawAxiosRequestHeaders | typeof AxiosHeaders;
 	expirySeconds?: number;
 	timeout?: number;
 	auth?: { username: string; password: string };

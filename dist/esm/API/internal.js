@@ -1,16 +1,19 @@
-import { JSONStringify } from "ivip-utils";
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.pushCacheBy = exports.getCacheBy = exports.getCacheIdBy = exports.cache = void 0;
+const ivip_utils_1 = require("ivip-utils");
 /**
  * Um mapeamento interno usado para armazenar em cache solicitações e suas informações associadas.
  * @internal
  */
-export const cache = new Map();
+exports.cache = new Map();
 const API_RESPONSE_EXPIRES = 15;
 const calculateExpiryTime = (expirySeconds) => (expirySeconds > 0 ? Date.now() + expirySeconds * 1000 : Infinity);
 const cleanUp = () => {
     const now = Date.now();
-    cache.forEach((entry, key) => {
+    exports.cache.forEach((entry, key) => {
         if (entry.expires <= now) {
-            cache.delete(key);
+            exports.cache.delete(key);
         }
     });
 };
@@ -22,27 +25,29 @@ setInterval(() => {
  * @param {any[]} args - Os argumentos que identificam a solicitação a ser armazenada em cache.
  * @returns {string} - O ID de cache gerado com base nos argumentos.
  */
-export const getCacheIdBy = (args) => {
+const getCacheIdBy = (args) => {
     const now = Date.now();
     let key = now.toString();
-    for (const [k, { props }] of cache) {
-        if (JSONStringify(props) === JSONStringify(args)) {
+    for (const [k, { props }] of exports.cache) {
+        if ((0, ivip_utils_1.JSONStringify)(props) === (0, ivip_utils_1.JSONStringify)(args)) {
             key = k;
             break;
         }
     }
     return key;
 };
+exports.getCacheIdBy = getCacheIdBy;
 /**
  * Obtém uma solicitação em cache com base nos argumentos fornecidos.
  * @param {any[]} args - Os argumentos que identificam a solicitação a ser recuperada da cache.
  * @returns {Fetch | undefined} - A solicitação armazenada em cache ou `undefined` se não encontrada.
  */
-export const getCacheBy = (args) => {
-    let key = getCacheIdBy(args);
-    const { promise } = cache.get(key) ?? { promise: undefined };
+const getCacheBy = (args) => {
+    let key = (0, exports.getCacheIdBy)(args);
+    const { promise } = exports.cache.get(key) ?? { promise: undefined };
     return promise;
 };
+exports.getCacheBy = getCacheBy;
 /**
  * Armazena uma solicitação em cache com base nos argumentos fornecidos.
  * @param {any[]} args - Os argumentos que identificam a solicitação a ser armazenada em cache.
@@ -50,13 +55,14 @@ export const getCacheBy = (args) => {
  * @param {number | undefined} expirySeconds - Opcional. O tempo, em segundos, após o qual a solicitação em cache deve expirar.
  * @returns {Fetch} - A promessa que representa a solicitação armazenada em cache.
  */
-export const pushCacheBy = (args, promise, expirySeconds = API_RESPONSE_EXPIRES) => {
+const pushCacheBy = (args, promise, expirySeconds = API_RESPONSE_EXPIRES) => {
     let key = Date.now().toString();
-    cache.set(key, {
+    exports.cache.set(key, {
         props: args,
         expires: calculateExpiryTime(expirySeconds),
         promise,
     });
     return promise;
 };
+exports.pushCacheBy = pushCacheBy;
 //# sourceMappingURL=internal.js.map

@@ -1,3 +1,6 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports._apps = void 0;
 /**
  * @internal
  * Uma mapa que armazena instâncias de aplicativos IvipRest.
@@ -5,5 +8,5 @@
  *
  * @type {Map<string, IvipRestApp<any>>}
  */
-export const _apps = new Map();
+exports._apps = new Map();
 //# sourceMappingURL=internal.js.map

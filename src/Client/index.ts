@@ -177,14 +177,14 @@ export class IvipRestClientSettings implements IvipRestAppConfig {
 	 * @readonly
 	 * @type {AxiosHeaders}
 	 */
-	get axiosHeaders(): AxiosHeaders {
+	get axiosHeaders(): typeof AxiosHeaders {
 		const headers = new AxiosHeaders();
 		Object.entries(this.headers).forEach(([header, value]) => {
 			if (isString(value) || (isArray(value) && (value as any).every(isString)) || isNumber(value) || isBoolean(value) || value === null) {
 				headers.set(header, value);
 			}
 		});
-		return headers;
+		return headers as any;
 	}
 }
 

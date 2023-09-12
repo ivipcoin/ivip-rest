@@ -1,13 +1,44 @@
-import { initializeApp, DEFAULT_ENTRY_NAME } from "../App/index.js";
-import express, { Router } from "express";
-import { JSONStringify, SimpleEventEmitter, isJson, isObject } from "ivip-utils";
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.IvipRestServerSettings = void 0;
+const App_1 = require("../App/index.js");
+const express_1 = __importStar(require("express"));
+const ivip_utils_1 = require("ivip-utils");
+const Result_1 = __importDefault(require("./Result.js"));
+const RouteController_1 = __importDefault(require("./RouteController.js"));
 /**
  * Configurações para um servidor IvipRest.
  *
  * @interface IvipRestServerSettings
  * @extends {IvipRestAppConfig}
  */
-export class IvipRestServerSettings {
+class IvipRestServerSettings {
     constructor(options) {
         /**
          * O nome do servidor.
@@ -15,7 +46,9 @@ export class IvipRestServerSettings {
          * @type {string}
          * @memberof IvipRestServerSettings
          */
-        this.name = DEFAULT_ENTRY_NAME;
+        this.name = App_1.DEFAULT_ENTRY_NAME;
+        this.resources = {};
+        this.watch = [];
         /**
          * O tipo do servidor, que deve ser "server".
          *
@@ -36,19 +69,29 @@ export class IvipRestServerSettings {
          * @type {PreRouteMiddleware[]}
          * @memberof IvipRestServerSettings
          */
-        this.preRouteMiddlewares = [express.json()];
+        this.preRouteMiddlewares = [express_1.default.json()];
         /**
          * Função a ser chamada quando uma rota não é encontrada.
          *
-         * @type {() => any}
+         * @type {(res: Response) => any}
          * @memberof IvipRestServerSettings
          */
-        this.notFoundHandler = () => "Invalid summons!";
+        this.notFoundHandler = (res) => new Result_1.default(null, "Invalid summons!", -1, res);
+        this.preRequestHook = (req) => Promise.resolve();
         if (typeof options !== "object") {
             options = {};
         }
         if (typeof options.name === "string") {
             this.name = options.name;
+        }
+        if (typeof options.routesPath === "string") {
+            this.routesPath = options.routesPath;
+        }
+        if (typeof options.resources === "object") {
+            this.resources = { ...this.resources, ...options.resources };
+        }
+        if (Array.isArray(options.watch)) {
+            this.watch = options.watch.filter((p) => typeof p === "string");
         }
         if (typeof options.notFoundHandler === "function") {
             this.notFoundHandler = options.notFoundHandler;
@@ -60,8 +103,12 @@ export class IvipRestServerSettings {
                 }
             });
         }
+        if (typeof options.preRequestHook === "function") {
+            this.preRequestHook = options.preRequestHook;
+        }
     }
 }
+exports.IvipRestServerSettings = IvipRestServerSettings;
 /**
  * Representa um servidor IvipRest.
  *
@@ -69,7 +116,7 @@ export class IvipRestServerSettings {
  * @class Server
  * @extends {SimpleEventEmitter}
  */
-export default class Server extends SimpleEventEmitter {
+class Server extends ivip_utils_1.SimpleEventEmitter {
     /**
      * Cria uma instância de Server.
      *
@@ -87,15 +134,25 @@ export default class Server extends SimpleEventEmitter {
          */
         this._ready = false;
         this._config = new IvipRestServerSettings(config);
-        this.app = express();
+        if (!this._config.routesPath) {
+            throw "You must specify the path of the routes for the assembly!";
+        }
+        this.app = (0, express_1.default)();
         this._config.preRouteMiddlewares.forEach((middlewares) => this.app.use(middlewares));
-        this.route = Router();
+        this.route = (0, express_1.Router)();
+        new RouteController_1.default({
+            app: this.app,
+            routesPath: this._config.routesPath,
+            preRequestHook: this._config.preRequestHook,
+            resources: this._config.resources,
+            watch: this._config.watch,
+        });
         this.app.use(this.route);
         this.app.get("/*", (req, res) => {
             res.status(404);
-            const response = this._config.notFoundHandler();
-            if (isJson(response) || isObject(response)) {
-                res.json(JSONStringify(response));
+            const response = this._config.notFoundHandler(res);
+            if ((0, ivip_utils_1.isJson)(response) || (0, ivip_utils_1.isObject)(response)) {
+                res.json((0, ivip_utils_1.JSONStringify)(response));
             }
             else {
                 res.send(response);
@@ -107,7 +164,7 @@ export default class Server extends SimpleEventEmitter {
         this.app.listen(this._config.port, () => {
             this.emit("ready");
         });
-        initializeApp(this, this._config);
+        (0, App_1.initializeApp)(this, this._config);
     }
     /**
      * Aguarda até que o servidor esteja pronto para aceitar conexões.
@@ -133,4 +190,5 @@ export default class Server extends SimpleEventEmitter {
         return this._ready;
     }
 }
+exports.default = Server;
 //# sourceMappingURL=index.js.map

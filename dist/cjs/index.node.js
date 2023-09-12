@@ -17,13 +17,16 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Server = exports.Client = void 0;
+exports.RouteComponent = exports.Server = exports.Client = void 0;
 var Client_1 = require("./Client");
 Object.defineProperty(exports, "Client", { enumerable: true, get: function () { return __importDefault(Client_1).default; } });
 __exportStar(require("./Client"), exports);
 var Server_1 = require("./Server");
 Object.defineProperty(exports, "Server", { enumerable: true, get: function () { return __importDefault(Server_1).default; } });
 __exportStar(require("./Server"), exports);
+var RouteComponent_1 = require("./Server/RouteComponent");
+Object.defineProperty(exports, "RouteComponent", { enumerable: true, get: function () { return __importDefault(RouteComponent_1).default; } });
+__exportStar(require("./Server/RouteComponent"), exports);
 __exportStar(require("./API"), exports);
 const API_1 = __importDefault(require("./API"));
 exports.default = API_1.default;

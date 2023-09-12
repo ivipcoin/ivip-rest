@@ -22,11 +22,16 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.IvipRestServerSettings = void 0;
 const App_1 = require("../App");
 const express_1 = __importStar(require("express"));
 const ivip_utils_1 = require("ivip-utils");
+const Result_1 = __importDefault(require("./Result"));
+const RouteController_1 = __importDefault(require("./RouteController"));
 /**
  * Configurações para um servidor IvipRest.
  *
@@ -42,6 +47,8 @@ class IvipRestServerSettings {
          * @memberof IvipRestServerSettings
          */
         this.name = App_1.DEFAULT_ENTRY_NAME;
+        this.resources = {};
+        this.watch = [];
         /**
          * O tipo do servidor, que deve ser "server".
          *
@@ -66,15 +73,25 @@ class IvipRestServerSettings {
         /**
          * Função a ser chamada quando uma rota não é encontrada.
          *
-         * @type {() => any}
+         * @type {(res: Response) => any}
          * @memberof IvipRestServerSettings
          */
-        this.notFoundHandler = () => "Invalid summons!";
+        this.notFoundHandler = (res) => new Result_1.default(null, "Invalid summons!", -1, res);
+        this.preRequestHook = (req) => Promise.resolve();
         if (typeof options !== "object") {
             options = {};
         }
         if (typeof options.name === "string") {
             this.name = options.name;
+        }
+        if (typeof options.routesPath === "string") {
+            this.routesPath = options.routesPath;
+        }
+        if (typeof options.resources === "object") {
+            this.resources = Object.assign(Object.assign({}, this.resources), options.resources);
+        }
+        if (Array.isArray(options.watch)) {
+            this.watch = options.watch.filter((p) => typeof p === "string");
         }
         if (typeof options.notFoundHandler === "function") {
             this.notFoundHandler = options.notFoundHandler;
@@ -85,6 +102,9 @@ class IvipRestServerSettings {
                     this.preRouteMiddlewares.push(middlewares);
                 }
             });
+        }
+        if (typeof options.preRequestHook === "function") {
+            this.preRequestHook = options.preRequestHook;
         }
     }
 }
@@ -114,13 +134,23 @@ class Server extends ivip_utils_1.SimpleEventEmitter {
          */
         this._ready = false;
         this._config = new IvipRestServerSettings(config);
+        if (!this._config.routesPath) {
+            throw "You must specify the path of the routes for the assembly!";
+        }
         this.app = (0, express_1.default)();
         this._config.preRouteMiddlewares.forEach((middlewares) => this.app.use(middlewares));
         this.route = (0, express_1.Router)();
+        new RouteController_1.default({
+            app: this.app,
+            routesPath: this._config.routesPath,
+            preRequestHook: this._config.preRequestHook,
+            resources: this._config.resources,
+            watch: this._config.watch,
+        });
         this.app.use(this.route);
         this.app.get("/*", (req, res) => {
             res.status(404);
-            const response = this._config.notFoundHandler();
+            const response = this._config.notFoundHandler(res);
             if ((0, ivip_utils_1.isJson)(response) || (0, ivip_utils_1.isObject)(response)) {
                 res.json((0, ivip_utils_1.JSONStringify)(response));
             }

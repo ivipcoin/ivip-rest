@@ -45,11 +45,11 @@ const prepareRoutes = (pathRoot: string, obj: Function | RouteComponent | object
 	}
 };
 
-const findModulesImporting = async (filePathToFind: string, limitPath: string | string[], visited = new Set()) => {
+const findModulesImporting = (filePathToFind: string, limitPath: string | string[], visited = new Set()) => {
 	const importingModules: string[] = [];
 	try {
-		async function isDescendant(childPath: string, parentPath: string | string[]) {
-			const path = await import("path");
+		const isDescendant = (childPath: string, parentPath: string | string[]) => {
+			const path = require("path");
 
 			parentPath = Array.isArray(parentPath) ? parentPath : [parentPath];
 
@@ -61,12 +61,12 @@ const findModulesImporting = async (filePathToFind: string, limitPath: string | 
 			}
 
 			return false;
-		}
+		};
 
 		let resolveFilePathToFind: string | undefined;
 
 		try {
-			resolveFilePathToFind = module.require.resolve(filePathToFind) ?? undefined;
+			resolveFilePathToFind = require.resolve(filePathToFind) ?? undefined;
 		} catch {
 			resolveFilePathToFind = undefined;
 		}
@@ -77,13 +77,13 @@ const findModulesImporting = async (filePathToFind: string, limitPath: string | 
 
 		visited.add(resolveFilePathToFind);
 
-		const nodes: Array<[string, string[]]> = Object.entries(module.require.cache).map(([path, node]) => {
+		const nodes: Array<[string, string[]]> = Object.entries(require.cache).map(([path, node]) => {
 			return [path, (node?.children ?? []).map(({ filename }) => filename)];
 		});
 
 		for (let [path, children] of nodes) {
-			if (children.includes(resolveFilePathToFind) && (await isDescendant(path, limitPath))) {
-				const childImportingModules = await findModulesImporting(path, limitPath, visited);
+			if (children.includes(resolveFilePathToFind) && isDescendant(path, limitPath)) {
+				const childImportingModules = findModulesImporting(path, limitPath, visited);
 				importingModules.push(path);
 
 				if (childImportingModules.length > 0) {
@@ -302,7 +302,7 @@ export default class RouteController<RouteResources = any> {
 				.replace(/\\/g, "/")
 				.replace(this.config.routesPath, "")
 				.replace(/(\/index\.(js|ts))$/gi, "");
-			delete module.require.cache[module.require.resolve(file)];
+			delete require.cache[require.resolve(file)];
 			let import_default = await import(path.resolve(file));
 
 			let routes = {};
@@ -332,15 +332,15 @@ export default class RouteController<RouteResources = any> {
 	}
 
 	async updateAllRoutes(file: string, limitPath: string | string[]) {
-		const paths = await findModulesImporting(file, limitPath);
+		const paths = findModulesImporting(file, limitPath);
 
-		delete module.require.cache[module.require.resolve(file)];
+		delete require.cache[require.resolve(file)];
 		await import(path.resolve(file));
 
 		for (let filePath of paths) {
 			try {
 				if (fs.existsSync(filePath)) {
-					delete module.require.cache[module.require.resolve(filePath)];
+					delete require.cache[require.resolve(filePath)];
 					await import(path.resolve(file));
 				}
 			} catch {}

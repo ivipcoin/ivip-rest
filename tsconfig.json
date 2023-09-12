@@ -1,13 +1,9 @@
 {
     "compilerOptions": {
-        "lib": [
-            "esnext",
-            "dom"
-        ],
         "listEmittedFiles": false,
-        "target": "ES6",
-        "module": "ES6",
-        "moduleResolution": "Node",
+        "target": "es5",
+        "module": "commonjs",
+        "moduleResolution": "node",
         "outDir": "./dist/esm",
         "rootDir": "./src",
         "strict": true,
@@ -22,7 +18,14 @@
         "resolveJsonModule": true,
         "noImplicitAny": false,
         "noEmitOnError": true,
-        "removeComments": false
+        "removeComments": false,
+        "emitDecoratorMetadata": true,
+        "experimentalDecorators": true,
+        "allowJs": true,
+        "allowSyntheticDefaultImports": true,
+        "noFallthroughCasesInSwitch": true,
+        "isolatedModules": true,
+        "noEmit": true
     },
     "compileOnSave": false,
     "include": [
@@ -31,12 +34,5 @@
     "exclude": [
         "node_modules",
         "dist"
-    ],
-    "ts-node": {
-        "loader": "esm",
-        "transpileOnly": true,
-        "compilerOptions": {
-            "module": "CommonJS"
-        }
-    }
+    ]
 }

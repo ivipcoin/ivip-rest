@@ -1,4 +1,4 @@
-import fetch, { Client, Server } from "../src/index.node";
+import fetch, { Client, Server } from "../src";
 //import { Client, Server } from "../dist/esm";
 
 new Client({

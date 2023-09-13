@@ -1,5 +1,3 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
 let code_list = {
     "200": "OK",
     "201": "Created",
@@ -55,7 +53,7 @@ let code_list = {
     "510": "Not Extended",
     "511": "Network Authentication Required",
 };
-class Result {
+export default class Result {
     constructor(response, description, code, res) {
         let version = String(global.URL || "").match(/(v[0-9\.]+)/gi);
         if (Array.isArray(version) && version.length > 0) {
@@ -97,5 +95,4 @@ class Result {
         }
     }
 }
-exports.default = Result;
 //# sourceMappingURL=Result.js.map

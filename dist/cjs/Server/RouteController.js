@@ -18,6 +18,7 @@ const Result_1 = __importDefault(require("./Result"));
 const ivip_utils_1 = require("ivip-utils");
 const myArgs = process.argv.slice(2);
 const isDev = myArgs.includes("dev");
+require = require("esm")(module);
 const validatePaths = (paths) => {
     paths = Array.isArray(paths) ? paths : [paths];
     return paths.filter((path) => {
@@ -46,12 +47,11 @@ const prepareRoutes = (pathRoot, obj, routes) => {
         }
     }
 };
-const findModulesImporting = async (filePathToFind, limitPath, visited = new Set()) => {
-    var _a;
+const findModulesImporting = (filePathToFind, limitPath, visited = new Set()) => {
     const importingModules = [];
     try {
-        async function isDescendant(childPath, parentPath) {
-            const path = await import("path");
+        const isDescendant = (childPath, parentPath) => {
+            const path = require("path");
             parentPath = Array.isArray(parentPath) ? parentPath : [parentPath];
             for (let parent of parentPath) {
                 const relativePath = path.relative(parent, childPath);
@@ -60,25 +60,24 @@ const findModulesImporting = async (filePathToFind, limitPath, visited = new Set
                 }
             }
             return false;
-        }
+        };
         let resolveFilePathToFind;
         try {
-            resolveFilePathToFind = (_a = module.require.resolve(filePathToFind)) !== null && _a !== void 0 ? _a : undefined;
+            resolveFilePathToFind = require.resolve(filePathToFind) ?? undefined;
         }
-        catch (_b) {
+        catch {
             resolveFilePathToFind = undefined;
         }
         if (!resolveFilePathToFind || visited.has(resolveFilePathToFind) || !isDescendant(resolveFilePathToFind, limitPath)) {
             return importingModules;
         }
         visited.add(resolveFilePathToFind);
-        const nodes = Object.entries(module.require.cache).map(([path, node]) => {
-            var _a;
-            return [path, ((_a = node === null || node === void 0 ? void 0 : node.children) !== null && _a !== void 0 ? _a : []).map(({ filename }) => filename)];
+        const nodes = Object.entries(require.cache).map(([path, node]) => {
+            return [path, (node?.children ?? []).map(({ filename }) => filename)];
         });
         for (let [path, children] of nodes) {
-            if (children.includes(resolveFilePathToFind) && (await isDescendant(path, limitPath))) {
-                const childImportingModules = await findModulesImporting(path, limitPath, visited);
+            if (children.includes(resolveFilePathToFind) && isDescendant(path, limitPath)) {
+                const childImportingModules = findModulesImporting(path, limitPath, visited);
                 importingModules.push(path);
                 if (childImportingModules.length > 0) {
                     importingModules.push(...childImportingModules);
@@ -86,7 +85,7 @@ const findModulesImporting = async (filePathToFind, limitPath, visited = new Set
             }
         }
     }
-    catch (_c) { }
+    catch { }
     return importingModules.filter((p, i, l) => l.indexOf(p) === i);
 };
 class RouteControllerSettings {
@@ -120,7 +119,6 @@ class RouteControllerSettings {
 exports.RouteControllerSettings = RouteControllerSettings;
 class RouteController {
     constructor(config) {
-        var _a;
         this.rootRoutes = {};
         this.cacheFileRoutes = {};
         this.router = express_1.default.Router();
@@ -146,7 +144,7 @@ class RouteController {
                 this.updateAllRoutes(file, importWatch.map((p) => (0, glob_parent_1.default)(p)));
             });
         }
-        (_a = this.config.app) === null || _a === void 0 ? void 0 : _a.use("/", this.router);
+        this.config.app?.use("/", this.router);
     }
     reposicionarRota(posicaoAtual, posicaoDesejada) {
         if (posicaoAtual === posicaoDesejada || posicaoAtual < 0 || posicaoAtual >= this.router.stack.length || posicaoDesejada < 0 || posicaoDesejada >= this.router.stack.length) {
@@ -163,9 +161,8 @@ class RouteController {
         const paramRoutes = listaDesejada
             .filter((route) => route.includes(":"))
             .sort((a, b) => {
-            var _a, _b, _c, _d;
-            const aParams = (_b = (_a = a.match(/\//g)) === null || _a === void 0 ? void 0 : _a.length) !== null && _b !== void 0 ? _b : 0;
-            const bParams = (_d = (_c = b.match(/\//g)) === null || _c === void 0 ? void 0 : _c.length) !== null && _d !== void 0 ? _d : 0;
+            const aParams = a.match(/\//g)?.length ?? 0;
+            const bParams = b.match(/\//g)?.length ?? 0;
             return bParams - aParams;
         });
         const alphaRoutes = listaDesejada.filter((route) => !route.includes(":")).sort();
@@ -187,7 +184,19 @@ class RouteController {
             req.query["clientIp"] = undefined;
             req.body["clientIp"] = undefined;
             req.headers["clientIp"] = undefined;
-            let request = Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign({}, req.body), req.params), req.query), req.headers), req.socket), req), { body: req.body, params: req.params, query: req.query, headers: req.headers, approvedRequest: false });
+            let request = {
+                ...req.body,
+                ...req.params,
+                ...req.query,
+                ...req.headers,
+                ...req.socket,
+                ...req,
+                body: req.body,
+                params: req.params,
+                query: req.query,
+                headers: req.headers,
+                approvedRequest: false,
+            };
             request["fullUrl"] = `${String(process.env.DOMAIN).replace(/(\/+)$/gi, "")}/${String(request["originalUrl"]).replace(/^(\/+)/gi, "")}`;
             const propsDispatch = { routes: this.rootRoutes, request, response_http: res };
             this.config.resources.dispatch = () => { };
@@ -202,7 +211,7 @@ class RouteController {
                 if ((0, ivip_utils_1.isBuffer)(result)) {
                     const contentType = await (0, file_type_1.fileTypeFromBuffer)(result);
                     res.writeHead(200, {
-                        "Content-type": contentType === null || contentType === void 0 ? void 0 : contentType.mime,
+                        "Content-type": contentType?.mime,
                         "Content-Length": result.length,
                     });
                     return res.end(result, "binary");
@@ -240,7 +249,7 @@ class RouteController {
                 .replace(/\\/g, "/")
                 .replace(this.config.routesPath, "")
                 .replace(/(\/index\.(js|ts))$/gi, "");
-            delete module.require.cache[module.require.resolve(file)];
+            delete require.cache[require.resolve(file)];
             let import_default = await import(path_1.default.resolve(file));
             let routes = {};
             let routesPath = Array.isArray(this.cacheFileRoutes[file]) ? this.cacheFileRoutes[file] : [];
@@ -259,20 +268,20 @@ class RouteController {
             }
             this.updateOrder();
         }
-        catch (_a) { }
+        catch { }
     }
     async updateAllRoutes(file, limitPath) {
-        const paths = await findModulesImporting(file, limitPath);
-        delete module.require.cache[module.require.resolve(file)];
+        const paths = findModulesImporting(file, limitPath);
+        delete require.cache[require.resolve(file)];
         await import(path_1.default.resolve(file));
         for (let filePath of paths) {
             try {
                 if (fs_1.default.existsSync(filePath)) {
-                    delete module.require.cache[module.require.resolve(filePath)];
+                    delete require.cache[require.resolve(filePath)];
                     await import(path_1.default.resolve(file));
                 }
             }
-            catch (_a) { }
+            catch { }
         }
         for (let routePath in this.cacheFileRoutes) {
             this.requireFileAndLoad(routePath);

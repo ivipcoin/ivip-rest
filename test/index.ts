@@ -1,5 +1,6 @@
+// import Client from "../src/Client";
 import fetch, { Client, Server } from "../src";
-//import { Client, Server } from "../dist/esm";
+// import { Client, Server } from "../dist/esm";
 
 new Client({
 	protocol: "https",
@@ -7,4 +8,8 @@ new Client({
 	path: "?format=json",
 });
 
-// fetch("/").then(console.log).catch(console.log);
+fetch("/").then(console.log).catch(console.log);
+
+// require = require("esm")(module);
+
+//console.log(require.cache);

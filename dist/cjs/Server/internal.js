@@ -42,9 +42,8 @@ const hasCacheBy = (args) => {
 };
 exports.hasCacheBy = hasCacheBy;
 const getCacheBy = (args) => {
-    var _a;
     let key = (0, exports.getCacheIdBy)(args);
-    const { value } = (_a = exports.cache.get(key)) !== null && _a !== void 0 ? _a : { value: undefined };
+    const { value } = exports.cache.get(key) ?? { value: undefined };
     return value;
 };
 exports.getCacheBy = getCacheBy;

@@ -81,7 +81,7 @@ class Result {
                 response: end_time.getTime() - start_time.getTime(),
             };
         }
-        catch (_a) {
+        catch {
             start_time = new Date();
             end_time = new Date();
             this.requisitionTime = {

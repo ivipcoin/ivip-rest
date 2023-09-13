@@ -1,17 +1,14 @@
 import express, { Express, Request, Router } from "express";
 import path from "path";
 import fs from "fs";
-// @ts-ignore
-import { fileTypeFromBuffer } from "file-type";
 import requestIp from "request-ip";
 import chokidar from "chokidar";
 import isGlob from "is-glob";
 import globParent from "glob-parent";
-
 import RouteComponent from "./RouteComponent";
 import { FunctionRouteUtils } from "../types/server";
 import Result from "./Result";
-import { isBuffer } from "ivip-utils";
+import { isBuffer, mimeTypeFromBuffer } from "ivip-utils";
 
 const myArgs = process.argv.slice(2);
 const isDev = myArgs.includes("dev");
@@ -142,6 +139,8 @@ export default class RouteController<RouteResources = any> {
 	private rootRoutes = {};
 	private config: RouteControllerSettings;
 	private cacheFileRoutes: { [file: string]: any } = {};
+	private timeUpdateAllRoutes: NodeJS.Timeout | undefined;
+	private readyForObservation: string[] = [];
 
 	constructor(config: Partial<Omit<RouteControllerSettings, "pathSearchRoutes">>) {
 		this.router = express.Router();
@@ -163,6 +162,11 @@ export default class RouteController<RouteResources = any> {
 			chokidar
 				.watch(importWatchPath)
 				.on("add", (file) => {
+					if (!this.readyForObservation.includes(file)) {
+						this.readyForObservation.push(file);
+						return;
+					}
+
 					this.updateAllRoutes(
 						file,
 						importWatch.map((p) => globParent(p)),
@@ -261,10 +265,8 @@ export default class RouteController<RouteResources = any> {
 				}
 
 				if (isBuffer(result)) {
-					const contentType = await fileTypeFromBuffer(result);
-
 					res.writeHead(200, {
-						"Content-type": contentType?.mime,
+						"Content-type": mimeTypeFromBuffer(result),
 						"Content-Length": result.length,
 					});
 
@@ -332,22 +334,34 @@ export default class RouteController<RouteResources = any> {
 	}
 
 	async updateAllRoutes(file: string, limitPath: string | string[]) {
-		const paths = findModulesImporting(file, limitPath);
+		clearTimeout(this.timeUpdateAllRoutes);
 
-		delete require.cache[require.resolve(file)];
-		await import(path.resolve(file));
+		this.timeUpdateAllRoutes = setTimeout(async () => {
+			const paths = findModulesImporting(file, limitPath);
 
-		for (let filePath of paths) {
-			try {
-				if (fs.existsSync(filePath)) {
-					delete require.cache[require.resolve(filePath)];
-					await import(path.resolve(file));
-				}
-			} catch {}
-		}
+			delete require.cache[require.resolve(file)];
 
-		for (let routePath in this.cacheFileRoutes) {
-			this.requireFileAndLoad(routePath);
-		}
+			const imports: string[] = [];
+
+			for (let filePath of paths) {
+				try {
+					if (fs.existsSync(filePath)) {
+						delete require.cache[require.resolve(filePath)];
+						imports.push(require.resolve(filePath));
+						await import(path.resolve(filePath));
+					}
+				} catch {}
+			}
+
+			await import(path.resolve(file));
+
+			for (let pathImport of imports) {
+				await import(pathImport);
+			}
+
+			for (let routePath in this.cacheFileRoutes) {
+				await this.requireFileAndLoad(routePath);
+			}
+		}, 5000);
 	}
 }

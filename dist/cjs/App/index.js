@@ -104,7 +104,6 @@ exports.IvipRestAppImpl = IvipRestAppImpl;
  * @returns A instância IvipRest inicializada.
  */
 function initializeApp(app, config = {}) {
-    var _a;
     const options = new IvipRestSettings(config);
     const name = options.name;
     if (typeof name !== "string" || !name) {
@@ -116,7 +115,7 @@ function initializeApp(app, config = {}) {
     const existingApp = internal_1._apps.get(name);
     if (existingApp) {
         // return the existing app if options and config deep equal the ones in the existing app.
-        if ((0, ivip_utils_1.deepEqual)(options, existingApp.options) && (0, ivip_utils_1.deepEqual)(config, (_a = existingApp.config) !== null && _a !== void 0 ? _a : {})) {
+        if ((0, ivip_utils_1.deepEqual)(options, existingApp.options) && (0, ivip_utils_1.deepEqual)(config, existingApp.config ?? {})) {
             return existingApp;
         }
         else {
@@ -144,8 +143,7 @@ exports.appExists = appExists;
  * @returns A instância IvipRest associada ao nome especificado.
  */
 function getApp(name = exports.DEFAULT_ENTRY_NAME) {
-    var _a;
-    const { app } = (_a = internal_1._apps.get(name)) !== null && _a !== void 0 ? _a : {};
+    const { app } = internal_1._apps.get(name) ?? {};
     if (!app) {
         //throw ERROR_FACTORY.create(AppError.NO_APP, { appName: name });
         throw "";

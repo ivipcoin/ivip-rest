@@ -43,9 +43,8 @@ exports.getCacheIdBy = getCacheIdBy;
  * @returns {Fetch | undefined} - A solicitação armazenada em cache ou `undefined` se não encontrada.
  */
 const getCacheBy = (args) => {
-    var _a;
     let key = (0, exports.getCacheIdBy)(args);
-    const { promise } = (_a = exports.cache.get(key)) !== null && _a !== void 0 ? _a : { promise: undefined };
+    const { promise } = exports.cache.get(key) ?? { promise: undefined };
     return promise;
 };
 exports.getCacheBy = getCacheBy;

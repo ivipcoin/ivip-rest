@@ -1,44 +1,15 @@
-"use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.IvipRestServerSettings = void 0;
-const App_1 = require("../App/index.js");
-const express_1 = __importStar(require("express"));
-const ivip_utils_1 = require("ivip-utils");
-const Result_1 = __importDefault(require("./Result.js"));
-const RouteController_1 = __importDefault(require("./RouteController.js"));
+import { initializeApp, DEFAULT_ENTRY_NAME } from "../App/index.js";
+import express, { Router } from "express";
+import { JSONStringify, SimpleEventEmitter, isJson, isObject } from "ivip-utils";
+import Result from "./Result.js";
+import RouteController from "./RouteController.js";
 /**
  * Configurações para um servidor IvipRest.
  *
  * @interface IvipRestServerSettings
  * @extends {IvipRestAppConfig}
  */
-class IvipRestServerSettings {
+export class IvipRestServerSettings {
     constructor(options) {
         /**
          * O nome do servidor.
@@ -46,7 +17,7 @@ class IvipRestServerSettings {
          * @type {string}
          * @memberof IvipRestServerSettings
          */
-        this.name = App_1.DEFAULT_ENTRY_NAME;
+        this.name = DEFAULT_ENTRY_NAME;
         this.resources = {};
         this.watch = [];
         /**
@@ -69,14 +40,14 @@ class IvipRestServerSettings {
          * @type {PreRouteMiddleware[]}
          * @memberof IvipRestServerSettings
          */
-        this.preRouteMiddlewares = [express_1.default.json()];
+        this.preRouteMiddlewares = [express.json()];
         /**
          * Função a ser chamada quando uma rota não é encontrada.
          *
          * @type {(res: Response) => any}
          * @memberof IvipRestServerSettings
          */
-        this.notFoundHandler = (res) => new Result_1.default(null, "Invalid summons!", -1, res);
+        this.notFoundHandler = (res) => new Result(null, "Invalid summons!", -1, res);
         this.preRequestHook = (req) => Promise.resolve();
         if (typeof options !== "object") {
             options = {};
@@ -108,7 +79,6 @@ class IvipRestServerSettings {
         }
     }
 }
-exports.IvipRestServerSettings = IvipRestServerSettings;
 /**
  * Representa um servidor IvipRest.
  *
@@ -116,7 +86,7 @@ exports.IvipRestServerSettings = IvipRestServerSettings;
  * @class Server
  * @extends {SimpleEventEmitter}
  */
-class Server extends ivip_utils_1.SimpleEventEmitter {
+export default class Server extends SimpleEventEmitter {
     /**
      * Cria uma instância de Server.
      *
@@ -137,10 +107,10 @@ class Server extends ivip_utils_1.SimpleEventEmitter {
         if (!this._config.routesPath) {
             throw "You must specify the path of the routes for the assembly!";
         }
-        this.app = (0, express_1.default)();
+        this.app = express();
         this._config.preRouteMiddlewares.forEach((middlewares) => this.app.use(middlewares));
-        this.route = (0, express_1.Router)();
-        new RouteController_1.default({
+        this.route = Router();
+        new RouteController({
             app: this.app,
             routesPath: this._config.routesPath,
             preRequestHook: this._config.preRequestHook,
@@ -151,8 +121,8 @@ class Server extends ivip_utils_1.SimpleEventEmitter {
         this.app.get("/*", (req, res) => {
             res.status(404);
             const response = this._config.notFoundHandler(res);
-            if ((0, ivip_utils_1.isJson)(response) || (0, ivip_utils_1.isObject)(response)) {
-                res.json((0, ivip_utils_1.JSONStringify)(response));
+            if (isJson(response) || isObject(response)) {
+                res.json(JSONStringify(response));
             }
             else {
                 res.send(response);
@@ -164,7 +134,7 @@ class Server extends ivip_utils_1.SimpleEventEmitter {
         this.app.listen(this._config.port, () => {
             this.emit("ready");
         });
-        (0, App_1.initializeApp)(this, this._config);
+        initializeApp(this, this._config);
     }
     /**
      * Aguarda até que o servidor esteja pronto para aceitar conexões.
@@ -190,5 +160,4 @@ class Server extends ivip_utils_1.SimpleEventEmitter {
         return this._ready;
     }
 }
-exports.default = Server;
 //# sourceMappingURL=index.js.map

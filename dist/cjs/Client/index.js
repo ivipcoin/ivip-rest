@@ -22,17 +22,6 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
-var __rest = (this && this.__rest) || function (s, e) {
-    var t = {};
-    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
-        t[p] = s[p];
-    if (s != null && typeof Object.getOwnPropertySymbols === "function")
-        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
-            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
-                t[p[i]] = s[p[i]];
-        }
-    return t;
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.IvipRestClientSettings = void 0;
 const axios_1 = __importStar(require("axios"));
@@ -208,11 +197,17 @@ class Client {
      * @returns {Promise<FetchResponse>} Uma promessa que resolve com a resposta da solicitação.
      */
     __fetch(route, config = {}) {
-        const _a = this._config.requestInterceptor(config), { method = "POST", headers = {}, body = {}, params = {} } = _a, axiosConfig = __rest(_a, ["method", "headers", "body", "params"]);
+        const { method = "POST", headers = {}, body = {}, params = {}, ...axiosConfig } = this._config.requestInterceptor(config);
         let [url, formatParams = ""] = this._config.apiUrl(route, params).split("?");
         url = url.replace(/$\//gi, "") + "/" + route.replace(/^\//gi, "") + (formatParams.trim() !== "" ? "?" + formatParams : "");
         return new Promise((resolve, reject) => {
-            (0, axios_1.default)(Object.assign({ method: method, url, headers: this._config.axiosHeaders.concat(headers), data: body }, axiosConfig))
+            (0, axios_1.default)({
+                method: method,
+                url,
+                headers: this._config.axiosHeaders.concat(headers),
+                data: body,
+                ...axiosConfig,
+            })
                 .then(({ status, statusText, data, headers }) => {
                 if (status !== 200) {
                     return reject(this._config.responseInterceptor({

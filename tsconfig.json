@@ -1,7 +1,11 @@
 {
     "compilerOptions": {
+        "lib": [
+            "es2021",
+            "dom"
+        ],
         "listEmittedFiles": false,
-        "target": "es5",
+        "target": "ES6",
         "module": "commonjs",
         "moduleResolution": "node",
         "outDir": "./dist/esm",
@@ -25,7 +29,10 @@
         "allowSyntheticDefaultImports": true,
         "noFallthroughCasesInSwitch": true,
         "isolatedModules": true,
-        "noEmit": true
+        "noEmit": true,
+        "types": [
+            "node"
+        ],
     },
     "compileOnSave": false,
     "include": [
@@ -34,5 +41,8 @@
     "exclude": [
         "node_modules",
         "dist"
-    ]
+    ],
+    "ts-node": {
+        "esm": true
+    }
 }

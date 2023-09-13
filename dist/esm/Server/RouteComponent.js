@@ -1,8 +1,5 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.RouteComponentSettings = void 0;
-const internal_1 = require("./internal.js");
-class RouteComponentSettings {
+import { getCacheBy, hasCacheBy, pushCacheBy } from "./internal.js";
+export class RouteComponentSettings {
     constructor(options) {
         this.path = "/";
         this.method = "all";
@@ -36,8 +33,7 @@ class RouteComponentSettings {
         }
     }
 }
-exports.RouteComponentSettings = RouteComponentSettings;
-class RouteComponent {
+export default class RouteComponent {
     constructor(config) {
         this.request = {};
         this.body = {};
@@ -110,8 +106,8 @@ class RouteComponent {
                     })), {
                         userId: cacheByUser ? request.ip : null,
                     }))}`;
-                    if ((0, internal_1.hasCacheBy)([cache_id])) {
-                        return resolve((0, internal_1.getCacheBy)([cache_id]));
+                    if (hasCacheBy([cache_id])) {
+                        return resolve(getCacheBy([cache_id]));
                     }
                 }
                 if (Array.isArray(method) && method.map((m) => String(m).toLowerCase()).includes(String(request.method).toLowerCase()) !== true) {
@@ -179,7 +175,7 @@ class RouteComponent {
                 const result = results.find((r) => r !== null) ?? undefined;
                 try {
                     if (lifetime > 0 && ["object", "boolean", "number", "bigint", "string"].includes(typeof result) && typeof cache_id === "string") {
-                        (0, internal_1.pushCacheBy)([cache_id], result, lifetime);
+                        pushCacheBy([cache_id], result, lifetime);
                     }
                 }
                 catch { }
@@ -191,5 +187,4 @@ class RouteComponent {
         });
     }
 }
-exports.default = RouteComponent;
 //# sourceMappingURL=RouteComponent.js.map

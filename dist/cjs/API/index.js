@@ -33,10 +33,9 @@ function fetch(...args) {
         config = args[2];
     }
     return (0, internal_1.pushCacheBy)(args, new Promise(async (resolve, reject) => {
-        var _a;
         try {
-            config.body = Object.assign({}, body !== null && body !== void 0 ? body : {}, (_a = config.body) !== null && _a !== void 0 ? _a : {});
-            let app = this !== null && this !== void 0 ? this : {};
+            config.body = Object.assign({}, body ?? {}, config.body ?? {});
+            let app = this ?? {};
             if (!app.fetch || typeof app.__fetch !== "function") {
                 app = (0, App_1.appExists)(App_1.DEFAULT_ENTRY_NAME) ? (0, App_1.getApp)(App_1.DEFAULT_ENTRY_NAME) : (0, App_1.getFirstApp)();
             }

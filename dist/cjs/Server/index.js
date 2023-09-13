@@ -88,7 +88,7 @@ class IvipRestServerSettings {
             this.routesPath = options.routesPath;
         }
         if (typeof options.resources === "object") {
-            this.resources = Object.assign(Object.assign({}, this.resources), options.resources);
+            this.resources = { ...this.resources, ...options.resources };
         }
         if (Array.isArray(options.watch)) {
             this.watch = options.watch.filter((p) => typeof p === "string");
@@ -177,7 +177,7 @@ class Server extends ivip_utils_1.SimpleEventEmitter {
         if (!this._ready) {
             await new Promise((resolve) => this.on("ready", resolve));
         }
-        callback === null || callback === void 0 ? void 0 : callback();
+        callback?.();
     }
     /**
      * Retorna true se o servidor estiver pronto para aceitar conexões.

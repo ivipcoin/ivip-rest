@@ -1,6 +1,6 @@
 {
 	"name": "ivip-rest",
-	"version": "1.1.4",
+	"version": "1.2.0",
 	"description": "O módulo `ivip-rest` é uma poderosa biblioteca Node.js desenvolvida para simplificar e aprimorar o gerenciamento de requisições e respostas de API em aplicações web. Com este módulo, você pode configurar facilmente servidores Express, criar clientes de API, e realizar requisições HTTP de maneira intuitiva e eficiente.",
 	"comments": {
 		"browser": "Consulte README.md para obter mais informações sobre ivip-rest para webpack/browserify",
@@ -69,7 +69,7 @@
 		"axios": "^1.5.0",
 		"express": "^4.18.2",
 		"glob-parent": "^6.0.2",
-		"ivip-utils": "^1.1.2",
+		"ivip-utils": "^1.1.5",
 		"request-ip": "^3.3.0"
 	},
 	"devDependencies": {
@@ -95,7 +95,9 @@
 	},
 	"nodemonConfig": {
 		"restartable": "rs",
-		"ignore": [],
+		"ignore": [
+			"test/routes"
+		],
 		"watch": [
 			"src",
 			"test"

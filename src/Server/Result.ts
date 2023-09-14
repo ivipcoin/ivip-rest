@@ -109,7 +109,7 @@ export default class Result {
 		}
 
 		if (res && typeof res.status === "function") {
-			if (!res.finished) {
+			if (!res.headersSent || !res.finished) {
 				res.status(this.code).json(this);
 			}
 		}

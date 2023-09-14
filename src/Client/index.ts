@@ -1,9 +1,10 @@
 import type { IvipRestAppConfig } from "../types/app";
-import type { FetchConfig, FetchResponse } from "../types/api";
+import type { Fetch, FetchBody, FetchConfig, FetchResponse } from "../types/api";
 import type { urlParams } from "../types";
 import axios, { AxiosHeaders, RawAxiosRequestHeaders } from "axios";
 import { isString, isArray, isNumber, isBoolean, getAllUrlParams, objectToUrlParams } from "ivip-utils";
 import { initializeApp, DEFAULT_ENTRY_NAME } from "../App";
+import fetch from "../API";
 
 /**
  * Configurações para um cliente Ivip Rest.
@@ -198,9 +199,9 @@ export default class Client {
 	/**
 	 * Cria uma instância de Client.
 	 * @constructor
-	 * @param {Partial<Omit<IvipRestClientSettings, "type" | "apiUrl" | "isLocalhost" | "axiosHeaders" | "type">>} config - Opções de configuração do cliente.
+	 * @param {Partial<Omit<IvipRestClientSettings, "type" | "apiUrl" | "isLocalhost" | "axiosHeaders">>} config - Opções de configuração do cliente.
 	 */
-	constructor(config: Partial<Omit<IvipRestClientSettings, "type" | "apiUrl" | "isLocalhost" | "axiosHeaders" | "type">>) {
+	constructor(config: Partial<Omit<IvipRestClientSettings, "type" | "apiUrl" | "isLocalhost" | "axiosHeaders">>) {
 		this._config = new IvipRestClientSettings(config);
 		initializeApp<Client, IvipRestClientSettings>(this, this._config);
 	}
@@ -256,5 +257,13 @@ export default class Client {
 					),
 				);
 		});
+	}
+
+	fetch(route: string): Fetch;
+	fetch(route: string, body: FetchBody): Fetch;
+	fetch(route: string, body: FetchBody, config: FetchConfig): Fetch;
+	fetch(route: string, config: FetchConfig): Fetch;
+	fetch(...args: any[]): Fetch {
+		return fetch.apply(this, args as any);
 	}
 }

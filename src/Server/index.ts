@@ -5,6 +5,8 @@ import express, { Express, Router } from "express";
 import { JSONStringify, SimpleEventEmitter, isJson, isObject } from "ivip-utils";
 import Result from "./Result";
 import RouteController from "./RouteController";
+import Client, { IvipRestClientSettings } from "../Client";
+import { Fetch, FetchBody, FetchConfig } from "../types/api";
 
 /**
  * Configurações para um servidor IvipRest.
@@ -61,6 +63,8 @@ export class IvipRestServerSettings<RouteResources = any> implements IvipRestApp
 
 	readonly preRequestHook: (req: Request) => Promise<void> = (req: Request) => Promise.resolve();
 
+	readonly clientConfig: Partial<Omit<IvipRestClientSettings, "name" | "protocol" | "host" | "port" | "type" | "apiUrl" | "isLocalhost" | "axiosHeaders">> = {};
+
 	constructor(options: Partial<IvipRestServerSettings>) {
 		if (typeof options !== "object") {
 			options = {};
@@ -97,6 +101,10 @@ export class IvipRestServerSettings<RouteResources = any> implements IvipRestApp
 		if (typeof options.preRequestHook === "function") {
 			this.preRequestHook = options.preRequestHook;
 		}
+
+		if (typeof options.clientConfig === "object") {
+			this.clientConfig = { ...this.clientConfig, ...options.clientConfig };
+		}
 	}
 }
 
@@ -118,15 +126,6 @@ export default class Server<RouteResources = any> extends SimpleEventEmitter {
 	readonly app: Express;
 
 	/**
-	 * O roteador Express associado a este servidor.
-	 *
-	 * @readonly
-	 * @type {Router}
-	 * @memberof Server
-	 */
-	readonly route: Router;
-
-	/**
 	 * As configurações do servidor.
 	 *
 	 * @private
@@ -143,6 +142,8 @@ export default class Server<RouteResources = any> extends SimpleEventEmitter {
 	 * @memberof Server
 	 */
 	protected _ready = false;
+
+	private client: Client;
 
 	/**
 	 * Cria uma instância de Server.
@@ -163,8 +164,6 @@ export default class Server<RouteResources = any> extends SimpleEventEmitter {
 
 		this._config.preRouteMiddlewares.forEach((middlewares) => this.app.use(middlewares));
 
-		this.route = Router();
-
 		new RouteController<RouteResources>({
 			app: this.app,
 			routesPath: this._config.routesPath,
@@ -173,15 +172,14 @@ export default class Server<RouteResources = any> extends SimpleEventEmitter {
 			watch: this._config.watch,
 		});
 
-		this.app.use(this.route);
-
 		this.app.get("/*", (req, res) => {
-			res.status(404);
 			const response = this._config.notFoundHandler(res as any);
-			if (isJson(response) || isObject(response)) {
-				res.json(JSONStringify(response));
-			} else {
-				res.send(response);
+			if (!res.headersSent || !res.finished) {
+				if (isJson(response) || isObject(response)) {
+					res.status(404).json(JSONStringify(response));
+				} else {
+					res.status(404).send(response);
+				}
 			}
 		});
 
@@ -193,7 +191,15 @@ export default class Server<RouteResources = any> extends SimpleEventEmitter {
 			this.emit("ready");
 		});
 
-		initializeApp<Server, IvipRestServerSettings>(this, this._config);
+		this.client = new Client({
+			...this._config.clientConfig,
+			name: this._config.name,
+			protocol: "http",
+			host: "localhost",
+			port: this._config.port,
+		});
+
+		//initializeApp<Server, IvipRestServerSettings>(this, this._config);
 	}
 
 	/**
@@ -219,5 +225,13 @@ export default class Server<RouteResources = any> extends SimpleEventEmitter {
 	 */
 	get isReady() {
 		return this._ready;
+	}
+
+	fetch(route: string): Fetch;
+	fetch(route: string, body: FetchBody): Fetch;
+	fetch(route: string, body: FetchBody, config: FetchConfig): Fetch;
+	fetch(route: string, config: FetchConfig): Fetch;
+	fetch(...args: any[]): Fetch {
+		return this.client.fetch.apply(this.client, args as any);
 	}
 }

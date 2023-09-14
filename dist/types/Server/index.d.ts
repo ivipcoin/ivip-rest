@@ -1,7 +1,9 @@
 import type { IvipRestAppConfig } from "../types/app";
 import type { PreRouteMiddleware } from "../types/server";
-import { Express, Router } from "express";
+import { Express } from "express";
 import { SimpleEventEmitter } from "ivip-utils";
+import { IvipRestClientSettings } from "../Client";
+import { Fetch, FetchBody, FetchConfig } from "../types/api";
 /**
  * Configurações para um servidor IvipRest.
  *
@@ -48,6 +50,7 @@ export declare class IvipRestServerSettings<RouteResources = any> implements Ivi
      */
     readonly notFoundHandler: (res: Response) => any;
     readonly preRequestHook: (req: Request) => Promise<void>;
+    readonly clientConfig: Partial<Omit<IvipRestClientSettings, "name" | "protocol" | "host" | "port" | "type" | "apiUrl" | "isLocalhost" | "axiosHeaders">>;
     constructor(options: Partial<IvipRestServerSettings>);
 }
 /**
@@ -67,14 +70,6 @@ export default class Server<RouteResources = any> extends SimpleEventEmitter {
      */
     readonly app: Express;
     /**
-     * O roteador Express associado a este servidor.
-     *
-     * @readonly
-     * @type {Router}
-     * @memberof Server
-     */
-    readonly route: Router;
-    /**
      * As configurações do servidor.
      *
      * @private
@@ -90,6 +85,7 @@ export default class Server<RouteResources = any> extends SimpleEventEmitter {
      * @memberof Server
      */
     protected _ready: boolean;
+    private client;
     /**
      * Cria uma instância de Server.
      *
@@ -113,5 +109,9 @@ export default class Server<RouteResources = any> extends SimpleEventEmitter {
      * @memberof Server
      */
     get isReady(): boolean;
+    fetch(route: string): Fetch;
+    fetch(route: string, body: FetchBody): Fetch;
+    fetch(route: string, body: FetchBody, config: FetchConfig): Fetch;
+    fetch(route: string, config: FetchConfig): Fetch;
 }
 //# sourceMappingURL=index.d.ts.map

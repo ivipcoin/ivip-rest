@@ -1,18 +1,15 @@
 import express from "express";
 import path from "path";
 import fs from "fs";
-// @ts-ignore
-import { fileTypeFromBuffer } from "file-type";
 import requestIp from "request-ip";
 import chokidar from "chokidar";
 import isGlob from "is-glob";
 import globParent from "glob-parent";
 import RouteComponent from "./RouteComponent.js";
 import Result from "./Result.js";
-import { isBuffer } from "ivip-utils";
+import { isBuffer, mimeTypeFromBuffer } from "ivip-utils";
 const myArgs = process.argv.slice(2);
 const isDev = myArgs.includes("dev");
-require = require("esm")(module);
 const validatePaths = (paths) => {
     paths = Array.isArray(paths) ? paths : [paths];
     return paths.filter((path) => {
@@ -22,7 +19,7 @@ const validatePaths = (paths) => {
 const renderPath = (pathRoot, pathMain) => ("/" + path.join(pathRoot, pathMain.indexOf("index") < 0 ? pathMain : "").replace(/([\\]+)/gi, "/")).replace(/^(\/+)/gi, "/").replace(/(\/+)$/gi, "");
 const prepareRoutes = (pathRoot, obj, routes) => {
     if (obj instanceof RouteComponent) {
-        let p = renderPath(pathRoot, obj.config.path);
+        let p = renderPath(pathRoot, obj.config.path).replace(/\{([a-zA-Z0-9_\-\s]+)\}/gi, ":$1");
         routes[p] = obj;
     }
     else if (typeof obj === "function") {
@@ -37,44 +34,49 @@ const prepareRoutes = (pathRoot, obj, routes) => {
     }
     else if (typeof obj === "object") {
         for (let key in obj) {
-            prepareRoutes(renderPath(pathRoot, key), obj[key], routes);
+            prepareRoutes(key !== "default" ? renderPath(pathRoot, key) : pathRoot, obj[key], routes);
         }
     }
 };
 const findModulesImporting = (filePathToFind, limitPath, visited = new Set()) => {
     const importingModules = [];
     try {
-        const isDescendant = (childPath, parentPath) => {
-            const path = require("path");
-            parentPath = Array.isArray(parentPath) ? parentPath : [parentPath];
-            for (let parent of parentPath) {
-                const relativePath = path.relative(parent, childPath);
-                if (!relativePath.startsWith("..") && !path.isAbsolute(relativePath)) {
-                    return true;
+        if (Array.isArray(filePathToFind)) {
+            importingModules.push(...Array.prototype.concat.apply([], filePathToFind.map((p) => findModulesImporting(p, limitPath))));
+        }
+        else {
+            const isDescendant = (childPath, parentPath) => {
+                const path = require("path");
+                parentPath = Array.isArray(parentPath) ? parentPath : [parentPath];
+                for (let parent of parentPath) {
+                    const relativePath = path.relative(parent, childPath);
+                    if (!relativePath.startsWith("..") && !path.isAbsolute(relativePath)) {
+                        return true;
+                    }
                 }
+                return false;
+            };
+            let resolveFilePathToFind;
+            try {
+                resolveFilePathToFind = require.resolve(filePathToFind) ?? undefined;
             }
-            return false;
-        };
-        let resolveFilePathToFind;
-        try {
-            resolveFilePathToFind = require.resolve(filePathToFind) ?? undefined;
-        }
-        catch {
-            resolveFilePathToFind = undefined;
-        }
-        if (!resolveFilePathToFind || visited.has(resolveFilePathToFind) || !isDescendant(resolveFilePathToFind, limitPath)) {
-            return importingModules;
-        }
-        visited.add(resolveFilePathToFind);
-        const nodes = Object.entries(require.cache).map(([path, node]) => {
-            return [path, (node?.children ?? []).map(({ filename }) => filename)];
-        });
-        for (let [path, children] of nodes) {
-            if (children.includes(resolveFilePathToFind) && isDescendant(path, limitPath)) {
-                const childImportingModules = findModulesImporting(path, limitPath, visited);
-                importingModules.push(path);
-                if (childImportingModules.length > 0) {
-                    importingModules.push(...childImportingModules);
+            catch {
+                resolveFilePathToFind = undefined;
+            }
+            if (!resolveFilePathToFind || visited.has(resolveFilePathToFind) || !isDescendant(resolveFilePathToFind, limitPath)) {
+                return importingModules;
+            }
+            visited.add(resolveFilePathToFind);
+            const nodes = Object.entries(require.cache).map(([path, node]) => {
+                return [path, (node?.children ?? []).map(({ filename }) => filename)];
+            });
+            for (let [path, children] of nodes) {
+                if (children.includes(resolveFilePathToFind) && isDescendant(path, limitPath)) {
+                    const childImportingModules = findModulesImporting(path, limitPath, visited);
+                    importingModules.push(path);
+                    if (childImportingModules.length > 0) {
+                        importingModules.push(...childImportingModules);
+                    }
                 }
             }
         }
@@ -89,6 +91,9 @@ export class RouteControllerSettings {
         this.resources = {};
         this.watch = [];
         this.preRequestHook = (req) => Promise.resolve();
+        this.onFileChange = (path) => {
+            console.log(`O arquivo ${path} foi modificado!`);
+        };
         if (typeof options !== "object") {
             options = {};
         }
@@ -96,7 +101,7 @@ export class RouteControllerSettings {
             this.routesPath = options.routesPath.replace(/\\/g, "/");
             this.pathSearchRoutes = path.join(this.routesPath, "./**/index.{js,ts}").replace(/\\/g, "/");
         }
-        if (options.app instanceof express) {
+        if (options.app && options.app._router && Array.isArray(options.app._router.stack)) {
             this.app = options.app;
         }
         if (typeof options.resources === "object") {
@@ -108,12 +113,18 @@ export class RouteControllerSettings {
         if (typeof options.preRequestHook === "function") {
             this.preRequestHook = options.preRequestHook;
         }
+        if (typeof options.onFileChange === "function") {
+            this.onFileChange = options.onFileChange;
+        }
     }
 }
 export default class RouteController {
     constructor(config) {
         this.rootRoutes = {};
         this.cacheFileRoutes = {};
+        this.readyForObservation = [];
+        this.observationApplyFor = [];
+        this.importWatchLimitPaths = [];
         this.router = express.Router();
         this.config = new RouteControllerSettings(config);
         chokidar
@@ -122,19 +133,24 @@ export default class RouteController {
             this.requireFileAndLoad(file);
         })
             .on("change", (file) => {
-            console.log(`O arquivo ${file} foi modificado!`);
+            this.config.onFileChange(file);
             this.requireFileAndLoad(file);
         });
         const importWatch = validatePaths(this.config.watch);
+        this.importWatchLimitPaths = importWatch.map((p) => globParent(p));
         for (let importWatchPath of importWatch) {
             chokidar
                 .watch(importWatchPath)
                 .on("add", (file) => {
-                this.updateAllRoutes(file, importWatch.map((p) => globParent(p)));
+                if (!this.readyForObservation.includes(file)) {
+                    this.readyForObservation.push(file);
+                    return;
+                }
+                this.updateAllRoutes(file);
             })
                 .on("change", (file) => {
-                console.log(`O arquivo ${file} foi modificado!`);
-                this.updateAllRoutes(file, importWatch.map((p) => globParent(p)));
+                this.config.onFileChange(file);
+                this.updateAllRoutes(file);
             });
         }
         this.config.app?.use("/", this.router);
@@ -202,9 +218,8 @@ export default class RouteController {
                     return;
                 }
                 if (isBuffer(result)) {
-                    const contentType = await fileTypeFromBuffer(result);
                     res.writeHead(200, {
-                        "Content-type": contentType?.mime,
+                        "Content-type": mimeTypeFromBuffer(result),
                         "Content-Length": result.length,
                     });
                     return res.end(result, "binary");
@@ -241,9 +256,9 @@ export default class RouteController {
             let indexPath = file
                 .replace(/\\/g, "/")
                 .replace(this.config.routesPath, "")
-                .replace(/(\/index\.(js|ts))$/gi, "");
+                .replace(/((\/index)?\.(js|ts))$/gi, "");
             delete require.cache[require.resolve(file)];
-            let import_default = await import(path.resolve(file));
+            let import_default = require(path.resolve(file));
             let routes = {};
             let routesPath = Array.isArray(this.cacheFileRoutes[file]) ? this.cacheFileRoutes[file] : [];
             for (let route of routesPath) {
@@ -263,22 +278,24 @@ export default class RouteController {
         }
         catch { }
     }
-    async updateAllRoutes(file, limitPath) {
-        const paths = findModulesImporting(file, limitPath);
-        delete require.cache[require.resolve(file)];
-        await import(path.resolve(file));
-        for (let filePath of paths) {
-            try {
-                if (fs.existsSync(filePath)) {
-                    delete require.cache[require.resolve(filePath)];
-                    await import(path.resolve(file));
+    async updateAllRoutes(file) {
+        clearTimeout(this.timeUpdateAllRoutes);
+        this.observationApplyFor.push(file);
+        this.timeUpdateAllRoutes = setTimeout(async () => {
+            const files = this.observationApplyFor.splice(0);
+            const paths = findModulesImporting(files, this.importWatchLimitPaths);
+            for (let filePath of files.concat(paths)) {
+                try {
+                    if (require.resolve(filePath) && require.resolve(filePath) in require.cache) {
+                        delete require.cache[require.resolve(filePath)];
+                    }
                 }
+                catch { }
             }
-            catch { }
-        }
-        for (let routePath in this.cacheFileRoutes) {
-            this.requireFileAndLoad(routePath);
-        }
+            for (let routePath in this.cacheFileRoutes) {
+                await this.requireFileAndLoad(routePath);
+            }
+        }, 5000);
     }
 }
 //# sourceMappingURL=RouteController.js.map

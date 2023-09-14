@@ -33,7 +33,7 @@ export function fetch(...args) {
         try {
             config.body = Object.assign({}, body ?? {}, config.body ?? {});
             let app = this ?? {};
-            if (!app.fetch || typeof app.__fetch !== "function") {
+            if (!app.__fetch || typeof app.__fetch !== "function") {
                 app = appExists(DEFAULT_ENTRY_NAME) ? getApp(DEFAULT_ENTRY_NAME) : getFirstApp();
             }
             app.__fetch(route, config).then(resolve).catch(reject);

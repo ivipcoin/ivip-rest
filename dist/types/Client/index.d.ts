@@ -1,5 +1,5 @@
 import type { IvipRestAppConfig } from "../types/app";
-import type { FetchConfig, FetchResponse } from "../types/api";
+import type { Fetch, FetchBody, FetchConfig, FetchResponse } from "../types/api";
 import type { urlParams } from "../types";
 import { AxiosHeaders, RawAxiosRequestHeaders } from "axios";
 /**
@@ -107,9 +107,9 @@ export default class Client {
     /**
      * Cria uma instância de Client.
      * @constructor
-     * @param {Partial<Omit<IvipRestClientSettings, "type" | "apiUrl" | "isLocalhost" | "axiosHeaders" | "type">>} config - Opções de configuração do cliente.
+     * @param {Partial<Omit<IvipRestClientSettings, "type" | "apiUrl" | "isLocalhost" | "axiosHeaders">>} config - Opções de configuração do cliente.
      */
-    constructor(config: Partial<Omit<IvipRestClientSettings, "type" | "apiUrl" | "isLocalhost" | "axiosHeaders" | "type">>);
+    constructor(config: Partial<Omit<IvipRestClientSettings, "type" | "apiUrl" | "isLocalhost" | "axiosHeaders">>);
     /**
      * Realiza uma solicitação à API.
      * @param {string} route - O caminho da solicitação.
@@ -117,5 +117,9 @@ export default class Client {
      * @returns {Promise<FetchResponse>} Uma promessa que resolve com a resposta da solicitação.
      */
     __fetch(route: string, config?: Partial<FetchConfig>): Promise<FetchResponse>;
+    fetch(route: string): Fetch;
+    fetch(route: string, body: FetchBody): Fetch;
+    fetch(route: string, body: FetchBody, config: FetchConfig): Fetch;
+    fetch(route: string, config: FetchConfig): Fetch;
 }
 //# sourceMappingURL=index.d.ts.map

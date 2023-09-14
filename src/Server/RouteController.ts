@@ -25,7 +25,7 @@ const renderPath = (pathRoot: string, pathMain: string) =>
 
 const prepareRoutes = (pathRoot: string, obj: Function | RouteComponent | object | Array<Function | RouteComponent>, routes: any) => {
 	if (obj instanceof RouteComponent) {
-		let p = renderPath(pathRoot, obj.config.path);
+		let p = renderPath(pathRoot, obj.config.path).replace(/\{([a-zA-Z0-9_\-\s]+)\}/gi, ":$1");
 		routes[p] = obj;
 	} else if (typeof obj === "function") {
 		prepareRoutes(pathRoot, RouteComponent.apply({ path: "/", method: "all" }, obj as any), routes);
@@ -37,54 +37,63 @@ const prepareRoutes = (pathRoot: string, obj: Function | RouteComponent | object
 		}
 	} else if (typeof obj === "object") {
 		for (let key in obj) {
-			prepareRoutes(renderPath(pathRoot, key), (obj as any)[key], routes);
+			prepareRoutes(key !== "default" ? renderPath(pathRoot, key) : pathRoot, (obj as any)[key], routes);
 		}
 	}
 };
 
-const findModulesImporting = (filePathToFind: string, limitPath: string | string[], visited = new Set()) => {
+const findModulesImporting = (filePathToFind: string | string[], limitPath: string | string[], visited = new Set()) => {
 	const importingModules: string[] = [];
 	try {
-		const isDescendant = (childPath: string, parentPath: string | string[]) => {
-			const path = require("path");
+		if (Array.isArray(filePathToFind)) {
+			importingModules.push(
+				...Array.prototype.concat.apply(
+					[],
+					filePathToFind.map((p) => findModulesImporting(p, limitPath)),
+				),
+			);
+		} else {
+			const isDescendant = (childPath: string, parentPath: string | string[]) => {
+				const path = require("path");
 
-			parentPath = Array.isArray(parentPath) ? parentPath : [parentPath];
+				parentPath = Array.isArray(parentPath) ? parentPath : [parentPath];
 
-			for (let parent of parentPath) {
-				const relativePath = path.relative(parent, childPath);
-				if (!relativePath.startsWith("..") && !path.isAbsolute(relativePath)) {
-					return true;
+				for (let parent of parentPath) {
+					const relativePath = path.relative(parent, childPath);
+					if (!relativePath.startsWith("..") && !path.isAbsolute(relativePath)) {
+						return true;
+					}
 				}
+
+				return false;
+			};
+
+			let resolveFilePathToFind: string | undefined;
+
+			try {
+				resolveFilePathToFind = require.resolve(filePathToFind) ?? undefined;
+			} catch {
+				resolveFilePathToFind = undefined;
 			}
 
-			return false;
-		};
+			if (!resolveFilePathToFind || visited.has(resolveFilePathToFind) || !isDescendant(resolveFilePathToFind, limitPath)) {
+				return importingModules;
+			}
 
-		let resolveFilePathToFind: string | undefined;
+			visited.add(resolveFilePathToFind);
 
-		try {
-			resolveFilePathToFind = require.resolve(filePathToFind) ?? undefined;
-		} catch {
-			resolveFilePathToFind = undefined;
-		}
+			const nodes: Array<[string, string[]]> = Object.entries(require.cache).map(([path, node]) => {
+				return [path, (node?.children ?? []).map(({ filename }) => filename)];
+			});
 
-		if (!resolveFilePathToFind || visited.has(resolveFilePathToFind) || !isDescendant(resolveFilePathToFind, limitPath)) {
-			return importingModules;
-		}
+			for (let [path, children] of nodes) {
+				if (children.includes(resolveFilePathToFind) && isDescendant(path, limitPath)) {
+					const childImportingModules = findModulesImporting(path, limitPath, visited);
+					importingModules.push(path);
 
-		visited.add(resolveFilePathToFind);
-
-		const nodes: Array<[string, string[]]> = Object.entries(require.cache).map(([path, node]) => {
-			return [path, (node?.children ?? []).map(({ filename }) => filename)];
-		});
-
-		for (let [path, children] of nodes) {
-			if (children.includes(resolveFilePathToFind) && isDescendant(path, limitPath)) {
-				const childImportingModules = findModulesImporting(path, limitPath, visited);
-				importingModules.push(path);
-
-				if (childImportingModules.length > 0) {
-					importingModules.push(...childImportingModules);
+					if (childImportingModules.length > 0) {
+						importingModules.push(...childImportingModules);
+					}
 				}
 			}
 		}
@@ -106,6 +115,10 @@ export class RouteControllerSettings<RouteResources = any> {
 
 	readonly preRequestHook: (req: Request) => Promise<void> = (req: Request) => Promise.resolve();
 
+	readonly onFileChange: (path: string) => void = (path: string) => {
+		console.log(`O arquivo ${path} foi modificado!`);
+	};
+
 	constructor(options: Partial<RouteControllerSettings>) {
 		if (typeof options !== "object") {
 			options = {};
@@ -116,7 +129,7 @@ export class RouteControllerSettings<RouteResources = any> {
 			this.pathSearchRoutes = path.join(this.routesPath, "./**/index.{js,ts}").replace(/\\/g, "/");
 		}
 
-		if (options.app instanceof express) {
+		if (options.app && options.app._router && Array.isArray(options.app._router.stack)) {
 			this.app = options.app;
 		}
 
@@ -131,6 +144,10 @@ export class RouteControllerSettings<RouteResources = any> {
 		if (typeof options.preRequestHook === "function") {
 			this.preRequestHook = options.preRequestHook;
 		}
+
+		if (typeof options.onFileChange === "function") {
+			this.onFileChange = options.onFileChange;
+		}
 	}
 }
 
@@ -141,6 +158,8 @@ export default class RouteController<RouteResources = any> {
 	private cacheFileRoutes: { [file: string]: any } = {};
 	private timeUpdateAllRoutes: NodeJS.Timeout | undefined;
 	private readyForObservation: string[] = [];
+	private observationApplyFor: string[] = [];
+	private importWatchLimitPaths: string[] = [];
 
 	constructor(config: Partial<Omit<RouteControllerSettings, "pathSearchRoutes">>) {
 		this.router = express.Router();
@@ -152,11 +171,13 @@ export default class RouteController<RouteResources = any> {
 				this.requireFileAndLoad(file);
 			})
 			.on("change", (file) => {
-				console.log(`O arquivo ${file} foi modificado!`);
+				this.config.onFileChange(file);
 				this.requireFileAndLoad(file);
 			});
 
 		const importWatch = validatePaths(this.config.watch);
+
+		this.importWatchLimitPaths = importWatch.map((p) => globParent(p));
 
 		for (let importWatchPath of importWatch) {
 			chokidar
@@ -167,17 +188,11 @@ export default class RouteController<RouteResources = any> {
 						return;
 					}
 
-					this.updateAllRoutes(
-						file,
-						importWatch.map((p) => globParent(p)),
-					);
+					this.updateAllRoutes(file);
 				})
 				.on("change", (file) => {
-					console.log(`O arquivo ${file} foi modificado!`);
-					this.updateAllRoutes(
-						file,
-						importWatch.map((p) => globParent(p)),
-					);
+					this.config.onFileChange(file);
+					this.updateAllRoutes(file);
 				});
 		}
 
@@ -303,9 +318,10 @@ export default class RouteController<RouteResources = any> {
 			let indexPath = file
 				.replace(/\\/g, "/")
 				.replace(this.config.routesPath, "")
-				.replace(/(\/index\.(js|ts))$/gi, "");
+				.replace(/((\/index)?\.(js|ts))$/gi, "");
+
 			delete require.cache[require.resolve(file)];
-			let import_default = await import(path.resolve(file));
+			let import_default = require(path.resolve(file));
 
 			let routes = {};
 
@@ -333,30 +349,20 @@ export default class RouteController<RouteResources = any> {
 		} catch {}
 	}
 
-	async updateAllRoutes(file: string, limitPath: string | string[]) {
+	async updateAllRoutes(file: string) {
 		clearTimeout(this.timeUpdateAllRoutes);
+		this.observationApplyFor.push(file);
 
 		this.timeUpdateAllRoutes = setTimeout(async () => {
-			const paths = findModulesImporting(file, limitPath);
+			const files = this.observationApplyFor.splice(0);
+			const paths = findModulesImporting(files, this.importWatchLimitPaths);
 
-			delete require.cache[require.resolve(file)];
-
-			const imports: string[] = [];
-
-			for (let filePath of paths) {
+			for (let filePath of files.concat(paths)) {
 				try {
-					if (fs.existsSync(filePath)) {
+					if (require.resolve(filePath) && require.resolve(filePath) in require.cache) {
 						delete require.cache[require.resolve(filePath)];
-						imports.push(require.resolve(filePath));
-						await import(path.resolve(filePath));
 					}
 				} catch {}
-			}
-
-			await import(path.resolve(file));
-
-			for (let pathImport of imports) {
-				await import(pathImport);
 			}
 
 			for (let routePath in this.cacheFileRoutes) {

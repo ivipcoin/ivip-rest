@@ -22,11 +22,15 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.IvipRestClientSettings = void 0;
 const axios_1 = __importStar(require("axios"));
 const ivip_utils_1 = require("ivip-utils");
 const App_1 = require("../App");
+const API_1 = __importDefault(require("../API"));
 /**
  * Configurações para um cliente Ivip Rest.
  * @class
@@ -184,7 +188,7 @@ class Client {
     /**
      * Cria uma instância de Client.
      * @constructor
-     * @param {Partial<Omit<IvipRestClientSettings, "type" | "apiUrl" | "isLocalhost" | "axiosHeaders" | "type">>} config - Opções de configuração do cliente.
+     * @param {Partial<Omit<IvipRestClientSettings, "type" | "apiUrl" | "isLocalhost" | "axiosHeaders">>} config - Opções de configuração do cliente.
      */
     constructor(config) {
         this._config = new IvipRestClientSettings(config);
@@ -230,6 +234,9 @@ class Client {
                 error: e,
             })));
         });
+    }
+    fetch(...args) {
+        return API_1.default.apply(this, args);
     }
 }
 exports.default = Client;

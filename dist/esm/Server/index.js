@@ -1,8 +1,9 @@
-import { initializeApp, DEFAULT_ENTRY_NAME } from "../App/index.js";
-import express, { Router } from "express";
+import { DEFAULT_ENTRY_NAME } from "../App/index.js";
+import express from "express";
 import { JSONStringify, SimpleEventEmitter, isJson, isObject } from "ivip-utils";
 import Result from "./Result.js";
 import RouteController from "./RouteController.js";
+import Client from "../Client/index.js";
 /**
  * Configurações para um servidor IvipRest.
  *
@@ -49,6 +50,7 @@ export class IvipRestServerSettings {
          */
         this.notFoundHandler = (res) => new Result(null, "Invalid summons!", -1, res);
         this.preRequestHook = (req) => Promise.resolve();
+        this.clientConfig = {};
         if (typeof options !== "object") {
             options = {};
         }
@@ -76,6 +78,9 @@ export class IvipRestServerSettings {
         }
         if (typeof options.preRequestHook === "function") {
             this.preRequestHook = options.preRequestHook;
+        }
+        if (typeof options.clientConfig === "object") {
+            this.clientConfig = { ...this.clientConfig, ...options.clientConfig };
         }
     }
 }
@@ -109,7 +114,6 @@ export default class Server extends SimpleEventEmitter {
         }
         this.app = express();
         this._config.preRouteMiddlewares.forEach((middlewares) => this.app.use(middlewares));
-        this.route = Router();
         new RouteController({
             app: this.app,
             routesPath: this._config.routesPath,
@@ -117,15 +121,15 @@ export default class Server extends SimpleEventEmitter {
             resources: this._config.resources,
             watch: this._config.watch,
         });
-        this.app.use(this.route);
         this.app.get("/*", (req, res) => {
-            res.status(404);
             const response = this._config.notFoundHandler(res);
-            if (isJson(response) || isObject(response)) {
-                res.json(JSONStringify(response));
-            }
-            else {
-                res.send(response);
+            if (!res.headersSent || !res.finished) {
+                if (isJson(response) || isObject(response)) {
+                    res.status(404).json(JSONStringify(response));
+                }
+                else {
+                    res.status(404).send(response);
+                }
             }
         });
         this.once("ready", () => {
@@ -134,7 +138,14 @@ export default class Server extends SimpleEventEmitter {
         this.app.listen(this._config.port, () => {
             this.emit("ready");
         });
-        initializeApp(this, this._config);
+        this.client = new Client({
+            ...this._config.clientConfig,
+            name: this._config.name,
+            protocol: "http",
+            host: "localhost",
+            port: this._config.port,
+        });
+        //initializeApp<Server, IvipRestServerSettings>(this, this._config);
     }
     /**
      * Aguarda até que o servidor esteja pronto para aceitar conexões.
@@ -158,6 +169,9 @@ export default class Server extends SimpleEventEmitter {
      */
     get isReady() {
         return this._ready;
+    }
+    fetch(...args) {
+        return this.client.fetch.apply(this.client, args);
     }
 }
 //# sourceMappingURL=index.js.map

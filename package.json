@@ -103,7 +103,7 @@
 			"test"
 		],
 		"delay": 2500,
-		"exec": "node --loader ts-node/esm --no-warnings",
+		"exec": "node --loader ts-node/esm --script-mode --transpile-only --no-warnings",
 		"ext": "js,ts"
 	}
 }

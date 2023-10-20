@@ -6,7 +6,7 @@ import chokidar from "chokidar";
 import isGlob from "is-glob";
 import globParent from "glob-parent";
 import RouteComponent from "./RouteComponent";
-import { FunctionRouteUtils } from "../types/server";
+import { FunctionRouteDone, FunctionRouteUtils, mimeTypes, statusCode } from "../types/server";
 import Result from "./Result";
 import { isBuffer, mimeTypeFromBuffer } from "ivip-utils";
 
@@ -115,6 +115,8 @@ export class RouteControllerSettings<RouteResources = any> {
 
 	readonly preRequestHook: (req: Request) => Promise<void> = (req: Request) => Promise.resolve();
 
+	readonly preResponseHook: (content: any, typeContent: mimeTypes, status: statusCode) => any | Promise<any> = (content: any, typeContent: mimeTypes, status: statusCode) => content;
+
 	readonly onFileChange: (path: string) => void = (path: string) => {
 		console.log(`O arquivo ${path} foi modificado!`);
 	};
@@ -143,6 +145,10 @@ export class RouteControllerSettings<RouteResources = any> {
 
 		if (typeof options.preRequestHook === "function") {
 			this.preRequestHook = options.preRequestHook;
+		}
+
+		if (typeof options.preResponseHook === "function") {
+			this.preResponseHook = options.preResponseHook;
 		}
 
 		if (typeof options.onFileChange === "function") {
@@ -267,12 +273,23 @@ export default class RouteController<RouteResources = any> {
 
 			const propsDispatch = { routes: this.rootRoutes, request, response_http: res };
 
-			this.config.resources.dispatch = () => {};
-			this.config.resources.request = (res: any) => res;
-			this.config.resources.requiresAccess = () => true;
+			let isDone: boolean = false;
+
+			const done: FunctionRouteDone = (content = {}, typeContent = "application/json", status = 200) => {
+				this.config.preResponseHook(content, typeContent, status);
+			};
+
+			const resources: FunctionRouteUtils & RouteResources = {
+				...this.config.resources,
+				done,
+				error: () => undefined,
+				dispatch: () => {},
+				request: (res: any) => res,
+				requiresAccess: () => true,
+			};
 
 			try {
-				let result = await (this.rootRoutes as any)[route].__render_component__(request, this.config.resources, next);
+				let result = await (this.rootRoutes as any)[route].__render_component__(request, resources, next);
 				//let result = await dispatch.bind(propsDispatch)(request.route.path);
 
 				if (res.finished) {

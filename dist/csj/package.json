@@ -1,5 +1,5 @@
 {
-    "type": "module",
+    "type": "commonjs",
     "main": "./index.node.js",
     "browser": "./index.browser.js",
     "module": "./index.js",

@@ -1,6 +1,6 @@
 import { Express, Request, Router } from "express";
 import RouteComponent from "./RouteComponent";
-import { FunctionRouteUtils } from "../types/server";
+import { FunctionRouteUtils, mimeTypes, statusCode } from "../types/server";
 export declare class RouteControllerSettings<RouteResources = any> {
     readonly app: Express | undefined;
     readonly routesPath: string;
@@ -8,6 +8,7 @@ export declare class RouteControllerSettings<RouteResources = any> {
     readonly resources: FunctionRouteUtils & RouteResources;
     readonly watch: string[];
     readonly preRequestHook: (req: Request) => Promise<void>;
+    readonly preResponseHook: (content: any, typeContent: mimeTypes, status: statusCode) => any | Promise<any>;
     readonly onFileChange: (path: string) => void;
     constructor(options: Partial<RouteControllerSettings>);
 }

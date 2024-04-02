@@ -1,6 +1,0 @@
-{
-    "type": "commonjs",
-	"main": "./index.node.ts",
-    "browser": "./index.browser.js",
-    "types": "../types/index.d.ts"
-}

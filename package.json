@@ -6,10 +6,9 @@
 		"browser": "Consulte README.md para obter mais informações sobre ivip-rest para webpack/browserify",
 		"exports": "Consulte README.md para obter mais informações sobre ivip-rest"
 	},
-	"main": "dist/cjs/index.node.ts",
-	"browser": "dist/cjs/index.browser.js",
-	"module": "./dist/esm/index.js",
-	"types": "./dist/types/index.d.ts",
+	"main": "./src/index.node.ts",
+	"browser": "./src/index.browser.js",
+	"module": "./src/index.js",
 	"files": [
 		"dist/"
 	],

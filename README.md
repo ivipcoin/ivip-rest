@@ -68,7 +68,7 @@ Para começar a usar a biblioteca `ivip-rest`, siga estas etapas:
     OU, se quiser usar o cliente no navegador, use o seguinte código:
 
     ```html
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/ivip-rest@latest/dist/browser.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/ivip-rest@latest/dist/bumdle/index.min.js"></script>
     ```
 
     Exemplo de uso:

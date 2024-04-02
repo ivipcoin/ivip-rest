@@ -43,7 +43,7 @@ export declare function fetch(this: any, route: string, config: FetchConfig): Fe
  * @returns {Object} - Um objeto contendo a função `fetch` do cliente de API.
  */
 export declare function api(name: string): {
-    fetch: any;
+    fetch: typeof fetch;
 };
 /**
  * Exportação padrão da função `fetch`. Pode ser usada diretamente ou através da função `api`.

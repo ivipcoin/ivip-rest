@@ -1,5 +1,8 @@
-import { getCacheBy, hasCacheBy, pushCacheBy } from "./internal";
-export class RouteComponentSettings {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.RouteComponentSettings = void 0;
+const internal_1 = require("./internal");
+class RouteComponentSettings {
     constructor(options) {
         this.path = "/";
         this.method = "all";
@@ -33,7 +36,8 @@ export class RouteComponentSettings {
         }
     }
 }
-export default class RouteComponent {
+exports.RouteComponentSettings = RouteComponentSettings;
+class RouteComponent {
     constructor(config) {
         this.request = {};
         this.body = {};
@@ -95,6 +99,7 @@ export default class RouteComponent {
     }
     __render_component__(request, resources) {
         return new Promise(async (resolve, reject) => {
+            var _a, _b, _c;
             try {
                 let results = [], cache_id = null;
                 const { lifetime, cacheByRequest, cacheByUser, method, requiresAccess, serverOnlyRequest, onlyAuthorizedRequest } = this.config;
@@ -106,8 +111,8 @@ export default class RouteComponent {
                     })), {
                         userId: cacheByUser ? request.ip : null,
                     }))}`;
-                    if (hasCacheBy([cache_id])) {
-                        return resolve(getCacheBy([cache_id]));
+                    if ((0, internal_1.hasCacheBy)([cache_id])) {
+                        return resolve((0, internal_1.getCacheBy)([cache_id]));
                     }
                 }
                 if (Array.isArray(method) && method.map((m) => String(m).toLowerCase()).includes(String(request.method).toLowerCase()) !== true) {
@@ -124,8 +129,8 @@ export default class RouteComponent {
                     const proceed = await resources
                         .requiresAccess([
                         {
-                            user: requiresAccess?.user ?? "",
-                            password: requiresAccess?.password ?? "",
+                            user: (_a = requiresAccess === null || requiresAccess === void 0 ? void 0 : requiresAccess.user) !== null && _a !== void 0 ? _a : "",
+                            password: (_b = requiresAccess === null || requiresAccess === void 0 ? void 0 : requiresAccess.password) !== null && _b !== void 0 ? _b : "",
                         },
                     ])
                         .then(() => Promise.resolve(true))
@@ -139,7 +144,7 @@ export default class RouteComponent {
                         try {
                             request["approvedRequest"] = await resources.checkAuthorization(request).catch(() => Promise.resolve(false));
                         }
-                        catch {
+                        catch (_d) {
                             request["approvedRequest"] = false;
                         }
                         request["requiredAuthorization"] = true;
@@ -163,7 +168,7 @@ export default class RouteComponent {
                 operationsRoute = Array.isArray(operationsRoute) ? operationsRoute : [operationsRoute];
                 const next = async (request, resources, index = 0) => {
                     const fn = operationsRoute[index];
-                    return await fn.apply({ ...this, request, body, params, query, headers, dispatch: resources.dispatch }, [
+                    return await fn.apply(Object.assign(Object.assign({}, this), { request, body, params, query, headers, dispatch: resources.dispatch }), [
                         Object.assign(request, { body, params, query, headers }),
                         resources,
                         async () => {
@@ -172,13 +177,13 @@ export default class RouteComponent {
                     ]);
                 };
                 results.push(await next(request, resources, 0));
-                const result = results.find((r) => r !== null) ?? undefined;
+                const result = (_c = results.find((r) => r !== null)) !== null && _c !== void 0 ? _c : undefined;
                 try {
                     if (lifetime > 0 && ["object", "boolean", "number", "bigint", "string"].includes(typeof result) && typeof cache_id === "string") {
-                        pushCacheBy([cache_id], result, lifetime);
+                        (0, internal_1.pushCacheBy)([cache_id], result, lifetime);
                     }
                 }
-                catch { }
+                catch (_e) { }
                 return resolve(result);
             }
             catch (e) {
@@ -187,4 +192,5 @@ export default class RouteComponent {
         });
     }
 }
+exports.default = RouteComponent;
 //# sourceMappingURL=RouteComponent.js.map

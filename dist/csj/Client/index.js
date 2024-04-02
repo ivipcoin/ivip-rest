@@ -1,12 +1,52 @@
-import axios, { AxiosHeaders } from "axios";
-import { isString, isArray, isNumber, isBoolean, getAllUrlParams, objectToUrlParams } from "ivip-utils";
-import { initializeApp, DEFAULT_ENTRY_NAME } from "../App";
-import fetch from "../API";
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __rest = (this && this.__rest) || function (s, e) {
+    var t = {};
+    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
+        t[p] = s[p];
+    if (s != null && typeof Object.getOwnPropertySymbols === "function")
+        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
+            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
+                t[p[i]] = s[p[i]];
+        }
+    return t;
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.IvipRestClientSettings = void 0;
+const axios_1 = __importStar(require("axios"));
+const ivip_utils_1 = require("ivip-utils");
+const App_1 = require("../App");
+const API_1 = __importDefault(require("../API"));
 /**
  * Configurações para um cliente Ivip Rest.
  * @class
  */
-export class IvipRestClientSettings {
+class IvipRestClientSettings {
     /**
      * Cria uma instância de IvipRestClientSettings.
      * @constructor
@@ -18,7 +58,7 @@ export class IvipRestClientSettings {
          * @readonly
          * @type {string}
          */
-        this.name = DEFAULT_ENTRY_NAME;
+        this.name = App_1.DEFAULT_ENTRY_NAME;
         /**
          * O tipo de cliente, que pode ser "server" ou "client".
          * @readonly
@@ -118,7 +158,7 @@ export class IvipRestClientSettings {
         }
         const joinParams = [path, params, ...urlParams]
             .map((p) => {
-            return objectToUrlParams(typeof p === "string" ? getAllUrlParams(p) : typeof p === "object" ? p : {});
+            return (0, ivip_utils_1.objectToUrlParams)(typeof p === "string" ? (0, ivip_utils_1.getAllUrlParams)(p) : typeof p === "object" ? p : {});
         })
             .filter((p) => p.trim() !== "")
             .join("&");
@@ -141,20 +181,21 @@ export class IvipRestClientSettings {
      * @type {AxiosHeaders}
      */
     get axiosHeaders() {
-        const headers = new AxiosHeaders();
+        const headers = new axios_1.AxiosHeaders();
         Object.entries(this.headers).forEach(([header, value]) => {
-            if (isString(value) || (isArray(value) && value.every(isString)) || isNumber(value) || isBoolean(value) || value === null) {
+            if ((0, ivip_utils_1.isString)(value) || ((0, ivip_utils_1.isArray)(value) && value.every(ivip_utils_1.isString)) || (0, ivip_utils_1.isNumber)(value) || (0, ivip_utils_1.isBoolean)(value) || value === null) {
                 headers.set(header, value);
             }
         });
         return headers;
     }
 }
+exports.IvipRestClientSettings = IvipRestClientSettings;
 /**
  * Cliente Ivip Rest para fazer solicitações à API.
  * @class
  */
-export default class Client {
+class Client {
     /**
      * Cria uma instância de Client.
      * @constructor
@@ -162,7 +203,7 @@ export default class Client {
      */
     constructor(config) {
         this._config = new IvipRestClientSettings(config);
-        initializeApp(this, this._config);
+        (0, App_1.initializeApp)(this, this._config);
     }
     /**
      * Realiza uma solicitação à API.
@@ -171,17 +212,11 @@ export default class Client {
      * @returns {Promise<FetchResponse>} Uma promessa que resolve com a resposta da solicitação.
      */
     __fetch(route, config = {}) {
-        const { method = "POST", headers = {}, body = {}, params = {}, ...axiosConfig } = this._config.requestInterceptor(config);
+        const _a = this._config.requestInterceptor(config), { method = "POST", headers = {}, body = {}, params = {} } = _a, axiosConfig = __rest(_a, ["method", "headers", "body", "params"]);
         let [url, formatParams = ""] = this._config.apiUrl(route, params).split("?");
         url = url.replace(/$\//gi, "") + "/" + route.replace(/^\//gi, "") + (formatParams.trim() !== "" ? "?" + formatParams : "");
         return new Promise((resolve, reject) => {
-            axios({
-                method: method,
-                url,
-                headers: this._config.axiosHeaders.concat(headers),
-                data: body,
-                ...axiosConfig,
-            })
+            (0, axios_1.default)(Object.assign({ method: method, url, headers: this._config.axiosHeaders.concat(headers), data: body }, axiosConfig))
                 .then(({ status, statusText, data, headers }) => {
                 if (status !== 200) {
                     return reject(this._config.responseInterceptor({
@@ -206,7 +241,8 @@ export default class Client {
         });
     }
     fetch(...args) {
-        return fetch.apply(this, args);
+        return API_1.default.apply(this, args);
     }
 }
+exports.default = Client;
 //# sourceMappingURL=index.js.map

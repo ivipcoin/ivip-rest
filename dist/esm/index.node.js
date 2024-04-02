@@ -1,10 +1,10 @@
-export { default as Client } from "./Client/index.js";
-export * from "./Client/index.js";
-export { default as Server } from "./Server/index.js";
-export * from "./Server/index.js";
-export { default as RouteComponent } from "./Server/RouteComponent.js";
-export * from "./Server/RouteComponent.js";
-export * from "./API/index.js";
-import fetch from "./API/index.js";
+export { default as Client } from "./Client";
+export * from "./Client";
+export { default as Server } from "./Server";
+export * from "./Server";
+export { default as RouteComponent } from "./Server/RouteComponent";
+export * from "./Server/RouteComponent";
+export * from "./API";
+import fetch from "./API";
 export default fetch;
 //# sourceMappingURL=index.node.js.map

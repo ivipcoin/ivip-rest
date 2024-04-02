@@ -1,29 +1,35 @@
-import express from "express";
-import path from "path";
-import fs from "fs";
-import requestIp from "request-ip";
-import chokidar from "chokidar";
-import isGlob from "is-glob";
-import globParent from "glob-parent";
-import RouteComponent from "./RouteComponent";
-import Result from "./Result";
-import { isBuffer, mimeTypeFromBuffer } from "ivip-utils";
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.RouteControllerSettings = void 0;
+const express_1 = __importDefault(require("express"));
+const path_1 = __importDefault(require("path"));
+const fs_1 = __importDefault(require("fs"));
+const request_ip_1 = __importDefault(require("request-ip"));
+const chokidar_1 = __importDefault(require("chokidar"));
+const is_glob_1 = __importDefault(require("is-glob"));
+const glob_parent_1 = __importDefault(require("glob-parent"));
+const RouteComponent_1 = __importDefault(require("./RouteComponent"));
+const Result_1 = __importDefault(require("./Result"));
+const ivip_utils_1 = require("ivip-utils");
 const myArgs = process.argv.slice(2);
 const isDev = myArgs.includes("dev");
 const validatePaths = (paths) => {
     paths = Array.isArray(paths) ? paths : [paths];
     return paths.filter((path) => {
-        return typeof path === "string" && (isGlob(path) || fs.existsSync(path));
+        return typeof path === "string" && ((0, is_glob_1.default)(path) || fs_1.default.existsSync(path));
     });
 };
-const renderPath = (pathRoot, pathMain) => ("/" + path.join(pathRoot, pathMain.indexOf("index") < 0 ? pathMain : "").replace(/([\\]+)/gi, "/")).replace(/^(\/+)/gi, "/").replace(/(\/+)$/gi, "");
+const renderPath = (pathRoot, pathMain) => ("/" + path_1.default.join(pathRoot, pathMain.indexOf("index") < 0 ? pathMain : "").replace(/([\\]+)/gi, "/")).replace(/^(\/+)/gi, "/").replace(/(\/+)$/gi, "");
 const prepareRoutes = (pathRoot, obj, routes) => {
-    if (obj instanceof RouteComponent) {
+    if (obj instanceof RouteComponent_1.default) {
         let p = renderPath(pathRoot, obj.config.path).replace(/\{([a-zA-Z0-9_\-\s]+)\}/gi, ":$1");
         routes[p] = obj;
     }
     else if (typeof obj === "function") {
-        prepareRoutes(pathRoot, RouteComponent.apply({ path: "/", method: "all" }, obj), routes);
+        prepareRoutes(pathRoot, RouteComponent_1.default.apply({ path: "/", method: "all" }, obj), routes);
     }
     else if (Array.isArray(obj)) {
         for (let component of obj) {
@@ -39,6 +45,7 @@ const prepareRoutes = (pathRoot, obj, routes) => {
     }
 };
 const findModulesImporting = (filePathToFind, limitPath, visited = new Set()) => {
+    var _a;
     const importingModules = [];
     try {
         if (Array.isArray(filePathToFind)) {
@@ -58,9 +65,9 @@ const findModulesImporting = (filePathToFind, limitPath, visited = new Set()) =>
             };
             let resolveFilePathToFind;
             try {
-                resolveFilePathToFind = require.resolve(filePathToFind) ?? undefined;
+                resolveFilePathToFind = (_a = require.resolve(filePathToFind)) !== null && _a !== void 0 ? _a : undefined;
             }
-            catch {
+            catch (_b) {
                 resolveFilePathToFind = undefined;
             }
             if (!resolveFilePathToFind || visited.has(resolveFilePathToFind) || !isDescendant(resolveFilePathToFind, limitPath)) {
@@ -68,7 +75,8 @@ const findModulesImporting = (filePathToFind, limitPath, visited = new Set()) =>
             }
             visited.add(resolveFilePathToFind);
             const nodes = Object.entries(require.cache).map(([path, node]) => {
-                return [path, (node?.children ?? []).map(({ filename }) => filename)];
+                var _a;
+                return [path, ((_a = node === null || node === void 0 ? void 0 : node.children) !== null && _a !== void 0 ? _a : []).map(({ filename }) => filename)];
             });
             for (let [path, children] of nodes) {
                 if (children.includes(resolveFilePathToFind) && isDescendant(path, limitPath)) {
@@ -81,10 +89,10 @@ const findModulesImporting = (filePathToFind, limitPath, visited = new Set()) =>
             }
         }
     }
-    catch { }
+    catch (_c) { }
     return importingModules.filter((p, i, l) => l.indexOf(p) === i);
 };
-export class RouteControllerSettings {
+class RouteControllerSettings {
     constructor(options) {
         this.routesPath = "";
         this.pathSearchRoutes = "";
@@ -100,7 +108,7 @@ export class RouteControllerSettings {
         }
         if (typeof options.routesPath === "string") {
             this.routesPath = options.routesPath.replace(/\\/g, "/");
-            this.pathSearchRoutes = path.join(this.routesPath, "./**/index.{js,ts}").replace(/\\/g, "/");
+            this.pathSearchRoutes = path_1.default.join(this.routesPath, "./**/index.{js,ts}").replace(/\\/g, "/");
         }
         if (options.app && options.app._router && Array.isArray(options.app._router.stack)) {
             this.app = options.app;
@@ -122,16 +130,18 @@ export class RouteControllerSettings {
         }
     }
 }
-export default class RouteController {
+exports.RouteControllerSettings = RouteControllerSettings;
+class RouteController {
     constructor(config) {
+        var _a;
         this.rootRoutes = {};
         this.cacheFileRoutes = {};
         this.readyForObservation = [];
         this.observationApplyFor = [];
         this.importWatchLimitPaths = [];
-        this.router = express.Router();
+        this.router = express_1.default.Router();
         this.config = new RouteControllerSettings(config);
-        chokidar
+        chokidar_1.default
             .watch(this.config.pathSearchRoutes)
             .on("add", (file) => {
             this.requireFileAndLoad(file);
@@ -141,9 +151,9 @@ export default class RouteController {
             this.requireFileAndLoad(file);
         });
         const importWatch = validatePaths(this.config.watch);
-        this.importWatchLimitPaths = importWatch.map((p) => globParent(p));
+        this.importWatchLimitPaths = importWatch.map((p) => (0, glob_parent_1.default)(p));
         for (let importWatchPath of importWatch) {
-            chokidar
+            chokidar_1.default
                 .watch(importWatchPath)
                 .on("add", (file) => {
                 if (!this.readyForObservation.includes(file)) {
@@ -157,7 +167,7 @@ export default class RouteController {
                 this.updateAllRoutes(file);
             });
         }
-        this.config.app?.use("/", this.router);
+        (_a = this.config.app) === null || _a === void 0 ? void 0 : _a.use("/", this.router);
     }
     reposicionarRota(posicaoAtual, posicaoDesejada) {
         if (posicaoAtual === posicaoDesejada || posicaoAtual < 0 || posicaoAtual >= this.router.stack.length || posicaoDesejada < 0 || posicaoDesejada >= this.router.stack.length) {
@@ -174,8 +184,9 @@ export default class RouteController {
         const paramRoutes = listaDesejada
             .filter((route) => route.includes(":"))
             .sort((a, b) => {
-            const aParams = a.match(/\//g)?.length ?? 0;
-            const bParams = b.match(/\//g)?.length ?? 0;
+            var _a, _b, _c, _d;
+            const aParams = (_b = (_a = a.match(/\//g)) === null || _a === void 0 ? void 0 : _a.length) !== null && _b !== void 0 ? _b : 0;
+            const bParams = (_d = (_c = b.match(/\//g)) === null || _c === void 0 ? void 0 : _c.length) !== null && _d !== void 0 ? _d : 0;
             return bParams - aParams;
         });
         const alphaRoutes = listaDesejada.filter((route) => !route.includes(":")).sort();
@@ -190,54 +201,35 @@ export default class RouteController {
         this.rootRoutes[route] = routeComponent;
         this.router.all(route, async (req, res, next) => {
             await this.config.preRequestHook(req);
-            req["requestIp"] = requestIp.getClientIp(req);
+            req["requestIp"] = request_ip_1.default.getClientIp(req);
             req["serverRequest"] = isDev;
             req["dispatched"] = false;
             req.params["clientIp"] = undefined;
             req.query["clientIp"] = undefined;
             req.body["clientIp"] = undefined;
             req.headers["clientIp"] = undefined;
-            let request = {
-                ...req.body,
-                ...req.params,
-                ...req.query,
-                ...req.headers,
-                ...req.socket,
-                ...req,
-                body: req.body,
-                params: req.params,
-                query: req.query,
-                headers: req.headers,
-                approvedRequest: false,
-            };
+            let request = Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign({}, req.body), req.params), req.query), req.headers), req.socket), req), { body: req.body, params: req.params, query: req.query, headers: req.headers, approvedRequest: false });
             request["fullUrl"] = `${String(process.env.DOMAIN).replace(/(\/+)$/gi, "")}/${String(request["originalUrl"]).replace(/^(\/+)/gi, "")}`;
             const propsDispatch = { routes: this.rootRoutes, request, response_http: res };
             let isDone = false;
             const done = (content = {}, typeContent = "application/json", status = 200) => {
                 this.config.preResponseHook(content, typeContent, status);
             };
-            const resources = {
-                ...this.config.resources,
-                done,
-                error: () => undefined,
-                dispatch: () => { },
-                request: (res) => res,
-                requiresAccess: () => true,
-            };
+            const resources = Object.assign(Object.assign({}, this.config.resources), { done, error: () => undefined, dispatch: () => { }, request: (res) => res, requiresAccess: () => true });
             try {
                 let result = await this.rootRoutes[route].__render_component__(request, resources, next);
                 //let result = await dispatch.bind(propsDispatch)(request.route.path);
                 if (res.finished) {
                     return;
                 }
-                if (isBuffer(result)) {
+                if ((0, ivip_utils_1.isBuffer)(result)) {
                     res.writeHead(200, {
-                        "Content-type": mimeTypeFromBuffer(result),
+                        "Content-type": (0, ivip_utils_1.mimeTypeFromBuffer)(result),
                         "Content-Length": result.length,
                     });
                     return res.end(result, "binary");
                 }
-                else if (result && typeof result.contentType === "string" && (typeof result.content === "string" || isBuffer(result.content))) {
+                else if (result && typeof result.contentType === "string" && (typeof result.content === "string" || (0, ivip_utils_1.isBuffer)(result.content))) {
                     const content = typeof result.content === "string" ? Buffer.from(result.content) : result.content;
                     res.writeHead(200, {
                         "Content-type": result.contentType,
@@ -252,15 +244,15 @@ export default class RouteController {
                     return res.end(Buffer.from(result.content));
                 }
                 else if (["object", "boolean", "number", "bigint", "string"].includes(typeof result)) {
-                    return new Result(result, "", 200, res);
+                    return new Result_1.default(result, "", 200, res);
                 }
                 else {
-                    return new Result(null, "Algo deu errado!", -1, res);
+                    return new Result_1.default(null, "Algo deu errado!", -1, res);
                 }
             }
             catch (e) {
                 console.error(e);
-                return new Result(null, String(e), -1, res);
+                return new Result_1.default(null, String(e), -1, res);
             }
         });
     }
@@ -271,7 +263,7 @@ export default class RouteController {
                 .replace(this.config.routesPath, "")
                 .replace(/((\/index)?\.(js|ts))$/gi, "");
             delete require.cache[require.resolve(file)];
-            let import_default = require(path.resolve(file));
+            let import_default = require(path_1.default.resolve(file));
             let routes = {};
             let routesPath = Array.isArray(this.cacheFileRoutes[file]) ? this.cacheFileRoutes[file] : [];
             for (let route of routesPath) {
@@ -289,7 +281,7 @@ export default class RouteController {
             }
             this.updateOrder();
         }
-        catch { }
+        catch (_a) { }
     }
     async updateAllRoutes(file) {
         clearTimeout(this.timeUpdateAllRoutes);
@@ -303,7 +295,7 @@ export default class RouteController {
                         delete require.cache[require.resolve(filePath)];
                     }
                 }
-                catch { }
+                catch (_a) { }
             }
             for (let routePath in this.cacheFileRoutes) {
                 await this.requireFileAndLoad(routePath);
@@ -311,4 +303,5 @@ export default class RouteController {
         }, 5000);
     }
 }
+exports.default = RouteController;
 //# sourceMappingURL=RouteController.js.map

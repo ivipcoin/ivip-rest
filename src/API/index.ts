@@ -59,7 +59,7 @@ export function fetch(this: any, ...args: any[]): Fetch {
 	let cachePromise = getCacheBy(args);
 
 	if (cachePromise) {
-		return Promise.any([cachePromise]);
+		return Promise.race([cachePromise]);
 	}
 
 	const route = args[0];
